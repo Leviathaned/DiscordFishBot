@@ -27,9 +27,16 @@ def grabSpecificFishFact(serverName, i):
 def addFishFact(serverName, fishFact):
     basePath = os.path.dirname(os.path.abspath(__file__))
     df = pandas.read_json(basePath + r'/fishFacts.json')
-    factCount = getFishFactCount(serverName)
-    df[serverName][0][str(factCount)] = fishFact
-    df.to_json(r'fishFacts.json')
+    try:
+        factCount = getFishFactCount(serverName)
+        df[serverName][0][str(factCount)] = fishFact
+        df.to_json(r'fishFacts.json')
+        return
+    except KeyError:
+        print("Creating new fact table for " + serverName)
+        df[serverName] = [{"0": fishFact}]
+        df.to_json(r'fishFacts.json')
+
 
 
 def removeFishFact(serverName, index):

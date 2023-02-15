@@ -31,7 +31,7 @@ async def on_message(message):
 
     if message.content.startswith('+'):
         userMessage = message.content.split(" ", 1)
-    else:   
+    else:
         return
 
     if userMessage[0] == '+hello':
@@ -56,7 +56,8 @@ Hello! I am the fishing bot! Here are the commands I currently support:
             await message.channel.send(fishFactOperations.grabFishFact(message.guild.name))
         else:
             try:
-                await message.channel.send(fishFactOperations.grabSpecificFishFact(message.guild.name, int(userMessage[1])))
+                await message.channel.send(
+                    fishFactOperations.grabSpecificFishFact(message.guild.name, int(userMessage[1])))
             except:
                 traceback.print_exc()
                 await message.channel.send(
@@ -73,7 +74,7 @@ Hello! I am the fishing bot! Here are the commands I currently support:
 
     if userMessage[0] == '+removeFishFact':
         await message.channel.send(
-            f"Are you sure you want to remove the fish fact {fishFactOperations.grabSpecificFishFact(message.guild.name ,int(userMessage[1]))} permanently? Please type 'Yes' to confirm, and anything else to cancel.")
+            f"Are you sure you want to remove the fish fact {fishFactOperations.grabSpecificFishFact(message.guild.name, int(userMessage[1]))} permanently? Please type 'Yes' to confirm, and anything else to cancel.")
         channel = message.channel
 
         def check(m):
