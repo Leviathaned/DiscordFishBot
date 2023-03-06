@@ -38,7 +38,6 @@ def addFishFact(serverName, fishFact):
         df.to_json(r'fishFacts.json')
 
 
-
 def removeFishFact(serverName, index):
 
     basePath = os.path.dirname(os.path.abspath(__file__))

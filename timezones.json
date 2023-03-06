@@ -1,0 +1,28 @@
+{
+  "timezones": {
+    "-11": "Pacific/Midway",
+    "-10": "Pacific/Rarotonga",
+    "-9": "America/Anchorage",
+    "-8": "Pacific/Pitcairn",
+    "-7": "US/Arizona",
+    "-6": "US/Central",
+    "-5": "US/East-Indiana",
+    "-4": "Brazil/West",
+    "-3": "Brazil/East",
+    "-2": "Brazil/DeNoronha",
+    "-1": "Atlantic/Cape_Verde",
+    "+0": "Africa/Accra",
+    "+1": "Africa/Algiers",
+    "+2": "Africa/Blantyre",
+    "+3": "Africa/Kampala",
+    "+4": "Asia/Baku",
+    "+5": "Asia/Dushanbe",
+    "+6": "Asia/Kashgar",
+    "+7": "Asia/Krasnoyarsk",
+    "+8": "Asia/Kuala_Lumpur",
+    "+9": "Asia/Pyongyang",
+    "+10": "Asia/Ust-Nera",
+    "+11": "Australia/Canberra",
+    "+12": "Asia/Kamchatka"
+  }
+}
