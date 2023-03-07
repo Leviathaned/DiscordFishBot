@@ -44,9 +44,12 @@ def removeFishFact(serverName, index):
     df = pandas.read_json(basePath + r'/fishFacts.json')
 
     # Make this actually signal that the process has failed, and have the bot notify the user of error
-    if len(df[serverName][0]) > index:
+    if len(df[serverName][0]) <= index:
         return
 
-    del df[serverName][0][str(index - 1)]
+    for i in range(index, len(df[serverName][0])):
+        df[serverName][0][str(i - 1)] = df[serverName][0][str(i)]
+
+    del df[serverName][0][str(len(df[serverName][0]) - 1)]
     df.to_json(r'fishFacts.json')
     return
