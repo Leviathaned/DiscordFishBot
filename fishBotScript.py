@@ -156,6 +156,6 @@ Hello! I am the fishing bot! Here are the commands I currently support:
                                    + str(duration.days) + " days, "
                                    + str(hours) + " hours, "
                                    + str(minutes) + " minutes, and "
-                                   + str(seconds) + " seconds. Be ready, brave fishers."
+                                   + str(seconds) + " seconds. Be ready, brave fishers.")
 
 client.run(TOKEN)
