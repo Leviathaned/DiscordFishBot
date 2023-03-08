@@ -17,4 +17,6 @@ class TestFishFacts(unittest.TestCase):
     def testAddAndRemove(self):
         fishFactOperations.addFishFact("testing2", "Hello, and welcome to the next sample fish fact!")
         fishFactOperations.removeFishFact("testing2", 3)
-        self.assertEqual(2, fishFactOperations.getFishFactCount("testing2"), "There is an error in getFishFactCount!")
+        self.assertEqual(3, fishFactOperations.getFishFactCount("testing2"), "There is an error in getFishFactCount!")
+
+

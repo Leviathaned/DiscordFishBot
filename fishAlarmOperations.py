@@ -1,5 +1,5 @@
 import pandas
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import pytz
 
 # This script will contain an hour offset for fishing friday alarm
@@ -38,7 +38,41 @@ def storeTimeZone(serverName, timezoneName):
     """
     df = getJsonData(serverName)
     df[serverName] = [timezoneName]
-    df.to_json("fishAlarmInfo.json")
+    df.to_json("serverTimezones.json")
+
+def switchFishingFridayEnabled(serverName):
+    """
+    :param String serverName:
+    :return: Boolean enabledStatus
+
+    This function will take a server name and switch the fishing friday alerts enabled status.
+    It will then return if the status has been set to enabled or disabled.
+    """
+
+    enabledStatus = not (getFishingFridayInfo(serverName))
+
+    df = getFishingFridayData(serverName)
+    df[serverName] = [enabledStatus]
+    df.to_json("enabledServers.json")
+
+    return enabledStatus
+
+def getFishingFridayInfo(serverName):
+    """
+
+    :param serverName:
+    :return: Boolean enabledStatus
+
+    This function will take a serverName and return if the server has enabled or disabled fishing friday alarms.
+    """
+    try:
+        df = getFishingFridayData("enabledServers.json")
+        return df[serverName][0]
+    except KeyError:
+        print("creating a new column")
+        df[serverName] = [False]
+        df.to_json("enabledServers.json")
+        return False
 
 def convertHourOffset(hourOffset):
     """
@@ -51,10 +85,36 @@ def convertHourOffset(hourOffset):
     df = pandas.read_json("timezones.json")
     return df["timezones"][hourOffset]
 
+def getTimeUntilFriday(currentTime):
+    """
+
+    :param datetime currentTime:
+    :return: duration
+
+    This function takes a datetime, and returns the duration until it is friday.
+    It will return True if it is already friday.
+    """
+    currentDay = ((currentTime.weekday() + 2) % 7)
+    if currentDay == 6:
+        return True
+
+    goalTime = currentTime + timedelta(hours = (6 - currentDay) * 24)
+    goalTime = goalTime.replace(hour=0, minute=0, second=0, microsecond=0)
+    return goalTime - currentTime
+
+# functions to get json data into a df that check if the file exists
 def getJsonData(server):
     try:
-        df = pandas.read_json("fishAlarmInfo.json")
+        df = pandas.read_json("serverTimezones.json")
     except ValueError:
         df = pandas.DataFrame(["timezone"], columns=[server])
+
+    return df
+
+def getFishingFridayData(server):
+    try:
+        df = pandas.read_json("enabledServers.json")
+    except ValueError:
+        df = pandas.DataFrame(["enabledStatus"], columns=[server])
 
     return df

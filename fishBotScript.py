@@ -17,6 +17,7 @@ intents = discord.Intents.all()
 
 client = commands.Bot(command_prefix="+", intents=intents)
 
+
 @client.event
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
@@ -48,6 +49,9 @@ Hello! I am the fishing bot! Here are the commands I currently support:
 +setTimezone: set the timezone for the server.
 +getTime: get the time based on the server.
 +getUTC: get the current UTC time.
+
++fridayStatus: Allows you to enable/disable this server to celebrate fishing friday!
++timeUntilFriday: How long until fishing friday?
 """)
     # code pertaining to fish facts
 
@@ -92,7 +96,8 @@ Hello! I am the fishing bot! Here are the commands I currently support:
             await message.channel.send("You have not set the server timezone!")
         else:
             await message.channel.send("The current time is " +
-                                       fishAlarmOperations.getCurrentTime(message.guild.name).strftime("%m/%d/%y, %I:%M:%S %p") + " .")
+                                       fishAlarmOperations.getCurrentTime(message.guild.name).strftime(
+                                           "%m/%d/%y, %I:%M:%S %p") + " .")
 
     if userMessage[0] == "+getUTC":
         await message.channel.send("The current UTC time is " +
@@ -109,14 +114,48 @@ Hello! I am the fishing bot! Here are the commands I currently support:
             return m.channel == channel and m.author == message.author
 
         msg = await client.wait_for("message", check=check)
-        #A secondary check to ensure it is a integer
+        # A secondary check to ensure it is a integer
         try:
             timezoneName = fishAlarmOperations.convertHourOffset(int(msg.content))
             fishAlarmOperations.storeTimeZone(message.guild.name, timezoneName)
             await message.channel.send("Timezone set! The current time is " +
-                                       fishAlarmOperations.getCurrentTime(message.guild.name).strftime("%m/%d/%y, %I:%M:%S %p"))
+                                       fishAlarmOperations.getCurrentTime(message.guild.name).strftime(
+                                           "%m/%d/%y, %I:%M:%S %p"))
         except ValueError:
-            await message.channel.send("The input " + msg.content + " is not a valid response. Please make sure you use a positive or negative integer, and that it falls within the range of -12 to +11.")
+            await message.channel.send(
+                "The input " + msg.content + " is not a valid response. Please make sure you use a positive or negative integer, and that it falls within the range of -12 to +11.")
 
+    if userMessage[0] == "+fridayStatus":
+        enabledStatus = ["disabled", "enable", "enabled"]
+
+        if fishAlarmOperations.getFishingFridayInfo(message.guild.name):
+            enabledStatus = ["enabled", "disable", "disabled"]
+
+        await message.channel.send("Fishing friday is " + enabledStatus[0] + " for this server. "
+                                   + "Would you like to " + enabledStatus[1] + " it? " +
+                                   "If so, type in 'Yes'. To cancel, type in anything else.")
+        channel = message.channel
+
+        def check(m):
+            return m.channel == channel and m.author == message.author
+
+        msg = await client.wait_for("message", check = check)
+        if msg.content == "Yes":
+            await message.channel.send("Fishing friday is now " + enabledStatus[2] + "!")
+            fishAlarmOperations.switchFishingFridayEnabled(message.guild.name)
+        else:
+            await message.channel.send("Alright, the command has been canceled.")
+
+    if userMessage[0] == "+timeUntilFriday":
+        currentTime = fishAlarmOperations.getCurrentTime(message.guild.name)
+        duration = fishAlarmOperations.getTimeUntilFriday(currentTime)
+        hours = duration.seconds // 3600
+        minutes = (duration.seconds // 60) - (hours * 60)
+        seconds = duration.seconds - (minutes * 60) - (hours * 3600)
+        await message.channel.send("Fishing friday is imminent...\nIt will be here in "
+                                   + str(duration.days) + " days, "
+                                   + str(hours) + " hours, "
+                                   + str(minutes) + " minutes, and "
+                                   + str(seconds) + " seconds. Be ready, brave fishers."
 
 client.run(TOKEN)

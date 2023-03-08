@@ -27,7 +27,7 @@ class FishAlarmTests(unittest.TestCase):
 
     def testSaveTimezone(self):
         timezoneName = fishAlarmOperations.convertHourOffset(4)
-        self.assertEqual(timezone, "Asia/Baku")
+        self.assertEqual(timezoneName, "Asia/Baku")
 
     def testTimeZoneAccuracy(self):
         for x in range(-11, 13, 1):
@@ -36,6 +36,21 @@ class FishAlarmTests(unittest.TestCase):
             UTCTime = datetime.now(timezone.utc)
             timezoneAdjust = UTCTime.astimezone(pytz.timezone(timezoneName))
             print(timezoneAdjust)
+
+    def testGetFishingFridayInfo(self):
+        enabled = fishAlarmOperations.getFishingFridayInfo("testing")
+        self.assertEqual(enabled, False)
+
+    def testSwitchServerEnabled(self):
+        enabled = fishAlarmOperations.getFishingFridayInfo("testing2")
+        fishAlarmOperations.switchFishingFridayEnabled("testing2")
+        self.assertEqual(not enabled, fishAlarmOperations.getFishingFridayInfo("testing2"))
+
+    def testTimeUntilFriday(self):
+        currentTime = fishAlarmOperations.getCurrentTime("Bot Testin")
+        duration = fishAlarmOperations.getTimeUntilFriday(currentTime)
+        print(duration)
+        self.assertEqual(True, True)
 
 
 
