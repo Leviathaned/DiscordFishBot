@@ -40,6 +40,17 @@ def storeTimeZone(serverName, timezoneName):
     df[serverName] = [timezoneName]
     df.to_json("serverTimezones.json")
 
+def setFishingFridayEnabled(serverID, enabled):
+    """
+    :param String serverID:
+    :param Boolean enabled:
+
+    Will set a server's fishing friday status to the enabled variable.
+    """
+    df = getFishingFridayData(serverID)
+    df[serverID] = [enabled]
+    df.to_json("enabledServers.json")
+
 def switchFishingFridayEnabled(serverName):
     """
     :param String serverName:
@@ -84,6 +95,12 @@ def convertHourOffset(hourOffset):
     """
     df = pandas.read_json("timezones.json")
     return df["timezones"][hourOffset]
+
+def isItFriday(serverName):
+    currentTime = getCurrentTime(serverName)
+    if currentTime.weekday() == 4:
+        return True
+    return False
 
 def getTimeUntilFriday(currentTime):
     """

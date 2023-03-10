@@ -33,7 +33,7 @@ def addFishFact(serverName, fishFact):
         df.to_json(r'fishFacts.json')
         return
     except KeyError:
-        print("Creating new fact table for " + serverName)
+        print("Creating new fact table for " + str(serverName))
         df[serverName] = [{"0": fishFact}]
         df.to_json(r'fishFacts.json')
 
