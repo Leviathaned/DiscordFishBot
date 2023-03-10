@@ -121,9 +121,9 @@ async def set_timezone(ctx):
 async def friday_status(ctx, enable: bool):
     fishAlarmOperations.setFishingFridayEnabled(ctx.guild.id, enable)
     if enable:
-        ctx.respond("Fishing friday has been enabled!")
+        await ctx.respond("Fishing friday has been enabled!")
         return
-    ctx.respond("Fishing friday has been disabled!")
+    await ctx.respond("Fishing friday has been disabled!")
 
 @client.slash_command(name="time_until_friday", guild_ids=guild_ids, description= "How much time until friday?")
 async def time_until_friday(ctx):
