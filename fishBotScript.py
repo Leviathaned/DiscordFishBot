@@ -19,7 +19,7 @@ intents = discord.Intents.all()
 
 client = discord.Bot(command_prefix="+", intents=intents)
 
-guild_ids = [844663929086935070, 1088123578966360114]
+guild_ids = []
 
 @tasks.loop(seconds = 10.0)
 async def checkTime():
