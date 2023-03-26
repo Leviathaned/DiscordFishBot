@@ -19,8 +19,6 @@ intents = discord.Intents.all()
 
 client = discord.Bot(command_prefix="+", intents=intents)
 
-guild_ids = []
-
 @tasks.loop(seconds = 10.0)
 async def checkTime():
 
@@ -65,11 +63,11 @@ async def on_ready():
     print(f'{client.user} has connected to Discord!')
     await client.change_presence(activity=discord.Game('Use +help'))
 
-@client.slash_command(name="hello", guild_ids=guild_ids, description="Say hello!")
+@client.slash_command(name="hello", description="Say hello!")
 async def hello(ctx):
     await ctx.respond("Hello!")
 
-@client.slash_command(name="get_fish_fact", guild_ids=guild_ids, description="Get a random fish fact!")
+@client.slash_command(name="get_fish_fact", description="Get a random fish fact!")
 @option("index",
         description = "Use this to find a specific fish fact!",
         required = False,
@@ -85,7 +83,7 @@ async def getFishFact(ctx, index: str):
         await ctx.respond(
             f'That number is either too high, or not a number at all! For reference, I currently have {fishFactOperations.getFishFactCount(str(ctx.guild.id))} fish facts!')
 
-@client.slash_command(name = "add_fish_fact", guild_ids=guild_ids, description = "Add a new fish fact!")
+@client.slash_command(name = "add_fish_fact", description = "Add a new fish fact!")
 @option("fish_fact",
         description= "The new fish fact!",
         required = True)
@@ -99,7 +97,7 @@ async def addFishFact(ctx, fish_fact: str):
         await ctx.respond(
             "There was an issue adding the fish fact. Did you properly space the fact out, and keep it right after the command?")
 
-@client.slash_command(name = "remove_fish_fact", guild_ids=guild_ids, description = "Remove a currently existing fish fact by index.")
+@client.slash_command(name = "remove_fish_fact", description = "Remove a currently existing fish fact by index.")
 @option("index",
         description="The fish fact to be deleted",
         required= True)
@@ -118,7 +116,7 @@ async def remove_fish_fact(ctx, index: str):
     else:
         await ctx.respond("Ok, the delete command has been canceled.")
 
-@client.slash_command(name="get_time", guild_ids=guild_ids, description="Get the current time!")
+@client.slash_command(name="get_time", description="Get the current time!")
 async def get_time(ctx):
     if not fishAlarmOperations.getCurrentTime(ctx.guild.id):
         await ctx.respond("You have not set the server timezone!")
@@ -126,12 +124,12 @@ async def get_time(ctx):
         await ctx.respond("The current time is " +
                           fishAlarmOperations.getCurrentTime(ctx.guild.id).strftime("%m/%d/%y, %I:%M:%S %p") + " .")
 
-@client.slash_command(name = "get_utc", guild_ids=guild_ids, description="Get the current UTC time!")
+@client.slash_command(name = "get_utc", description="Get the current UTC time!")
 async def get_utc(ctx):
     await ctx.respond("The current UTC time is " +
                       fishAlarmOperations.getCurrentTimeUTC().strftime("%m/%d/%y, %I:%M:%S %p") + " .")
 
-@client.slash_command(name = "set_timezone", guild_ids=guild_ids, description="Set the server time zone!")
+@client.slash_command(name = "set_timezone", description="Set the server time zone!")
 async def set_timezone(ctx):
     await ctx.respond("The current UTC time is " +
                       fishAlarmOperations.getCurrentTimeUTC().strftime("%m/%d/%y, %I:%M:%S %p") + "." +
@@ -152,7 +150,7 @@ async def set_timezone(ctx):
         await ctx.respond(
             "The input " + msg.content + " is not a valid response. Please make sure you use a positive or negative integer, and that it falls within the range of -12 to +11.")
 
-@client.slash_command(name = "friday_status", guild_ids=guild_ids, description = "Enable fishing friday bot commands in the current channel.")
+@client.slash_command(name = "friday_status", description = "Enable fishing friday bot commands in the current channel.")
 @option(name="enable",
         description= "Set to True if you want fishing friday, set to False to disable fishing friday.",
         required = True)
@@ -162,12 +160,11 @@ async def friday_status(ctx, enable: bool):
 
     if enable:
         await ctx.respond("Fishing friday has been enabled! The channel '#" + ctx.channel.name + "' will be the fishing channel from here on out!"
-                          + "To change the fishing channel, re-run this command in the desired channel."
-                          + str(ctx.channel.id))
+                          + "To change the fishing channel, re-run this command in the desired channel.")
         return
     await ctx.respond("Fishing friday has been disabled!")
 
-@client.slash_command(name="time_until_friday", guild_ids=guild_ids, description= "How much time until friday?")
+@client.slash_command(name="time_until_friday", description= "How much time until friday?")
 async def time_until_friday(ctx):
     currentTime = fishAlarmOperations.getCurrentTime(ctx.guild.id)
     if not currentTime:
