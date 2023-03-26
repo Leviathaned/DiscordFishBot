@@ -7,7 +7,6 @@ import pytz
 # This script will contain an hour offset for fishing friday alarm
 def getAlarmInfo(serverName):
     df = getTimezoneData(serverName)
-    print(df)
 
 def getCurrentTimeUTC():
     return datetime.now(timezone.utc)
@@ -23,7 +22,6 @@ def getCurrentTime(serverID):
     df = getTimezoneData()
     UTCTime = getCurrentTimeUTC()
     selectedServer = df[df['serverID'] == serverID]
-    print(selectedServer.index[0])
 
     try:
         timezoneAdjust = UTCTime.astimezone(pytz.timezone(selectedServer['timezone'][selectedServer.index[0]]))
@@ -93,7 +91,6 @@ def getFishingFridayInfo(serverName):
         df = getFishingFridayData("enabledServers.json")
         return df[serverName][0]
     except KeyError:
-        print("creating a new row")
         df[serverName] = [False]
         df.to_json("enabledServers.json")
         return False
