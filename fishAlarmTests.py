@@ -15,7 +15,7 @@ class FishAlarmTests(unittest.TestCase):
         self.assertEqual(True, True)
 
     def testGetAdjustedTime(self):
-        print(fishAlarmOperations.getCurrentTime("testing2"))
+        print(fishAlarmOperations.getCurrentTime(844663929086935070))
         self.assertEqual(True, True)
 
     def testGetCurrentTimeWrongName(self):
@@ -51,6 +51,25 @@ class FishAlarmTests(unittest.TestCase):
         duration = fishAlarmOperations.getTimeUntilFriday(currentTime)
         print(duration)
         self.assertEqual(True, True)
+
+    def testGetEnabledServers(self):
+        print(fishAlarmOperations.getFridayEnabledList())
+        self.assertEqual(True, True)
+
+    def testGetEnabledChannel(self):
+        print(fishAlarmOperations.getFridayEnabledChannel('844663929086935070'))
+        self.assertEqual(True, True)
+
+    def testSetEnabledServer(self):
+        fishAlarmOperations.setFishingFridayEnabled(844663929086935070, True, 844663929837060148)
+        self.assertEqual(True, True)
+
+    def testIncrementStage(self):
+        fishAlarmOperations.incrementStage(844663929086935070)
+        self.assertEqual(True, True)
+
+
+
 
 
 
