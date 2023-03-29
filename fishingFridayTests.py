@@ -13,3 +13,7 @@ class FishingFridayTests(unittest.TestCase):
         fish = fish.replace(" ", "_")
         print("https://en.wikipedia.org/wiki/" + fish)
         self.assertEqual(True, True)
+
+    def testComment(self):
+        fishingFridayOperations.addComment(1088123578966360114, "This is a sample comment to be voted upon!")
+        self.assertEqual(True, True)
