@@ -22,3 +22,7 @@ class FishingFridayTests(unittest.TestCase):
         exists = fishingFridayOperations.checkIfUserCommentExists(1088123578966360114, 321724036155441153)
         print(exists)
         self.assertEqual(True, True)
+
+    def testClearFridayComments(self):
+        fishingFridayOperations.clearFridayComments()
+        self.assertEqual(True, True)

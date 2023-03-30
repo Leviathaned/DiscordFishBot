@@ -43,6 +43,7 @@ def addComment(serverID, comment, user):
 
         if selectedServer.empty:
             df.loc[len(df.index)] = [serverID, comment, user]
+            df.to_json("fridayComments.json")
             return
 
         currentComments = selectedServer["comments"].tolist()
@@ -66,7 +67,7 @@ def addComment(serverID, comment, user):
 
     except (ValueError, KeyError):
         traceback.print_exc()
-        createFridayCommentsTable()
+        df = createFridayCommentsTable(serverID, comment, user)
 
     df.to_json("fridayComments.json")
 
@@ -97,3 +98,15 @@ def checkIfUserCommentExists(serverID, user):
         traceback.print_exc()
         return False
 
+def getFridayCommentsDf():
+    try:
+        df = getFridayComments()
+        return df
+    except:
+        return False
+
+def clearFridayComments():
+    df = pd.DataFrame()
+    print(df)
+    df.to_json("fridayComments.json")
+    return
