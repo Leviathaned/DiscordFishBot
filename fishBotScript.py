@@ -19,6 +19,8 @@ intents = discord.Intents.all()
 
 client = discord.Bot(command_prefix="+", intents=intents)
 
+debugServers = [844663929086935070, 1088123578966360114]
+
 @tasks.loop(seconds = 10.0)
 async def checkTime():
 
@@ -199,5 +201,29 @@ async def fish(ctx):
 async def comment(ctx):
     await ctx.respond("The post is not open for comments yet.\nBe patient, almighty fisher...")
 
+@client.slash_command(name="debug_comment", guild_ids= debugServers, description="Adding a comment under the current user.")
+@option(name="userComment",
+        description= "What is your comment?",
+        required = True)
+async def debugComment(ctx, userComment: str):
+    exists = fishingFridayOperations.checkIfUserCommentExists(ctx.guild.id, ctx.author.id)
+    if not isinstance(exists, str):
+        fishingFridayOperations.addComment(ctx.guild.id, userComment, ctx.author.id)
+        await ctx.respond("Your comment '" + userComment + "' has been successfully added!")
+        return
+
+    await ctx.respond("You already have the submitted comment '" + exists + "' for today! Would you like to replace it? Type Yes to replace, or anything else to cancel.")
+
+    channel = ctx.channel
+
+    def check(m):
+        return m.channel == channel and m.author == ctx.author
+
+    msg = await client.wait_for("message", check=check)
+    if msg == "Yes":
+        fishingFridayOperations.addComment(ctx.guild.id, userComment, ctx.author.id)
+        await ctx.respond("Alright, your new comment is '" + userComment + "'")
+        return
+    await ctx.respond("Alright, the comment change has been canceled.")
 
 client.run(TOKEN)
