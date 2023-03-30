@@ -21,17 +21,24 @@ client = discord.Bot(command_prefix="+", intents=intents)
 
 debugServers = [844663929086935070, 1088123578966360114]
 
+sentMessage = [0]
+
 @tasks.loop(seconds = 10.0)
 async def checkTime():
-
     newDF = fishAlarmOperations.getFridayEnabledList()
     serverList = newDF["serverID"].tolist()
     channelList = newDF["channelID"].tolist()
     enabledList = newDF["enabled"].tolist()
     fridayStageList = newDF["fridayStage"].tolist()
+    messagesList = []
 
     for serverIndex in range(0, len(channelList)):
         currentStage = fridayStageList[serverIndex]
+        if currentStage != 0 and not fishAlarmOperations.isItFriday(serverList[serverIndex]):
+            fishAlarmOperations.resetStage(serverList[serverIndex])
+            fishingFridayOperations.clearFridayComments()
+            return
+
         channel = client.get_channel(channelList[serverIndex])
         if enabledList[serverIndex] and fishAlarmOperations.isItFriday(serverList[serverIndex]):
             if currentStage == 0 and fishAlarmOperations.checkAfterHour(serverList[serverIndex], 12):
@@ -39,24 +46,53 @@ async def checkTime():
                 fishAlarmOperations.incrementStage(serverList[serverIndex])
 
             if currentStage == 1 and fishAlarmOperations.checkAfterHour(serverList[serverIndex], 16):
-                await channel.send("Make sure you've submitted your comments (impossible)! Fishing Friday voting will happen in 2 hours!")
+                await channel.send("Make sure you've submitted your comments! Fishing Friday voting will happen in 2 hours!")
                 fishAlarmOperations.incrementStage(serverList[serverIndex])
 
             if currentStage == 2 and fishAlarmOperations.checkAfterHour(serverList[serverIndex], 18):
                 await channel.send("Comment submission has ended! Here are the submitted comments:")
-                # list off comments and hold onto ID's here
-                await channel.send("Place an emote on your favorite comment! The comment with the most votes will win, and their comment will be kept for the next week!")
+                fridayComments = fishingFridayOperations.getFridayCommentsDf()
+                fridayComments = fridayComments[fridayComments["serverID"] == serverList[serverIndex]]
+
+                commentsList = fridayComments["comments"].tolist()
+                userList = fridayComments["user"].tolist()
+
+                serverMessagesList = []
+                for i in range(0, len(commentsList)):
+
+                    userName = client.fetch_user(userList[i])
+                    print(userName)
+                    sentMessage[0] = await channel.send(commentsList[i] + " - " + userName)
+                    serverMessagesList[i] = sentMessage[0].id
+                    await sentMessage[0].add_reaction("fire")
+
+                messagesList[serverIndex] = serverMessagesList
+                await channel.send("Place an fire emoji on your favorite comments! The comment with the most votes will win, and their comment will be kept for the next week!")
                 fishAlarmOperations.incrementStage(serverList[serverIndex])
 
             # TODO: find a way to handle tie breakers here
 
             if currentStage == 3 and fishAlarmOperations.checkAfterHour(serverList[serverIndex], 20):
-                await channel.send("As fishing friday comes to a close, it is time to announce the winning comment!(impossible)")
-                await channel.send("Congratulations to Levi! He is so cool and awesome :)")
+                await channel.send("As fishing friday comes to a close, it is time to announce the winning comment!")
+
+                serverMessagesList = messagesList[serverIndex]
+                winningMessage = ["None", "None", 0]
+
+                fridayComments = fishingFridayOperations.getFridayCommentsDf()
+                fridayComments = fridayComments[fridayComments["serverID"] == serverList[serverIndex]]
+                userList = fridayComments["user"].tolist()
+
+                for i in range(0, len(serverMessagesList)):
+                    msg = await channel.messages.fetch(serverMessagesList[i])
+                    fireReactions = discord.utils.get(msg.reactions, emoji="🔥")
+                    if fireReactions > winningMessage[2]:
+                        winningMessage = [msg.content, client.fetch_user(userList[i]), fireReactions]
+
+                await channel.send("Congratulations to " + str(winningMessage[1]) + " for winning the comment competition!")
+                await channel.send("\"" + (winningMessage[0]) +  "\"")
 
         #reset code
-        if currentStage != 0 and not fishAlarmOperations.isItFriday(serverList[serverIndex]):
-            fishAlarmOperations.resetStage(serverList[serverIndex])
+
 
 
 @client.event
@@ -198,18 +234,18 @@ async def fish(ctx):
     await ctx.respond("You caught a " + caughtFish + "!\n" + link)
 
 @client.slash_command(name="comment", description="Comment what you caught on fishing friday!")
-async def comment(ctx):
-    await ctx.respond("The post is not open for comments yet.\nBe patient, almighty fisher...")
-
-@client.slash_command(name="debug_comment", guild_ids= debugServers, description="Adding a comment under the current user.")
-@option(name="userComment",
+@option(name="user_comment",
         description= "What is your comment?",
         required = True)
-async def debugComment(ctx, userComment: str):
+async def comment(ctx, user_comment: str):
+    if not fishAlarmOperations.isItFriday(ctx.guild.id):
+        await ctx.respond("It is not fishing friday yet.\nBe patient, powerful fisher.")
+        return
+
     exists = fishingFridayOperations.checkIfUserCommentExists(ctx.guild.id, ctx.author.id)
     if not isinstance(exists, str):
-        fishingFridayOperations.addComment(ctx.guild.id, userComment, ctx.author.id)
-        await ctx.respond("Your comment '" + userComment + "' has been successfully added!")
+        fishingFridayOperations.addComment(ctx.guild.id, user_comment, ctx.author.id)
+        await ctx.respond("Your comment '" + user_comment + "' has been successfully added!")
         return
 
     await ctx.respond("You already have the submitted comment '" + exists + "' for today! Would you like to replace it? Type Yes to replace, or anything else to cancel.")
@@ -220,10 +256,69 @@ async def debugComment(ctx, userComment: str):
         return m.channel == channel and m.author == ctx.author
 
     msg = await client.wait_for("message", check=check)
-    if msg == "Yes":
-        fishingFridayOperations.addComment(ctx.guild.id, userComment, ctx.author.id)
-        await ctx.respond("Alright, your new comment is '" + userComment + "'")
+    if msg.content == "Yes":
+        fishingFridayOperations.addComment(ctx.guild.id, user_comment, ctx.author.id)
+        await ctx.respond("Alright, your new comment is '" + user_comment + "'")
         return
     await ctx.respond("Alright, the comment change has been canceled.")
+
+@client.slash_command(name="view_comment", description="View your submitted comment!")
+async def viewComment(ctx):
+    if not fishAlarmOperations.isItFriday(ctx.guild.id):
+        await ctx.respond("It is not fishing friday.\nBe patient, vigilant fisher...")
+        return
+    userComment = fishingFridayOperations.checkIfUserCommentExists(ctx.guild.id, ctx.author.id)
+    if not isinstance(userComment, str):
+        await ctx.respond("You do not have a comment currently submitted!")
+        return
+    await ctx.respond("Your wonderful comment is " + userComment + ".")
+
+@client.slash_command(name="debug_comment", guild_ids= debugServers, description="Adding a comment under the current user.")
+@option(name="user_comment",
+        description= "What is your comment?",
+        required = True)
+async def debugComment(ctx, user_comment: str):
+    exists = fishingFridayOperations.checkIfUserCommentExists(ctx.guild.id, ctx.author.id)
+    if not isinstance(exists, str):
+        fishingFridayOperations.addComment(ctx.guild.id, user_comment, ctx.author.id)
+        await ctx.respond("Your comment '" + user_comment + "' has been successfully added!")
+        return
+
+    await ctx.respond("You already have the submitted comment '" + exists + "' for today! Would you like to replace it? Type Yes to replace, or anything else to cancel.")
+
+    channel = ctx.channel
+
+    def check(m):
+        return m.channel == channel and m.author == ctx.author
+
+    msg = await client.wait_for("message", check=check)
+    if msg.content == "Yes":
+        fishingFridayOperations.addComment(ctx.guild.id, user_comment, ctx.author.id)
+        await ctx.respond("Alright, your new comment is '" + user_comment + "'")
+        return
+    await ctx.respond("Alright, the comment change has been canceled.")
+
+@client.slash_command(name="see_comment_debug", guild_ids= debugServers, description="View your currently submitted comment.")
+async def seeCommentDebug(ctx):
+    userComment = fishingFridayOperations.checkIfUserCommentExists(ctx.guild.id, ctx.author.id)
+    if not isinstance(userComment, str):
+        await ctx.respond("You do not have a comment currently submitted!")
+        return
+    await ctx.respond("Your wonderful comment is " + userComment + ".")
+
+@client.slash_command(name="place_reaction_message", guild_ids= debugServers, description="Set down a base reaction message.")
+async def placeReactionMessage(ctx):
+    await ctx.respond("Sending generic message...")
+    reactionMessage = await ctx.channel.send("Here is a generic message!")
+    await reactionMessage.add_reaction(emoji="🔥")
+    print(reactionMessage.id)
+    sentMessage[0] = reactionMessage.id
+
+@client.slash_command(name="check_message_reactions", guild_ids=debugServers, description="Check the reaction stats on the previously placed message")
+async def checkMessageReactions(ctx):
+    reactionMessage = await ctx.fetch_message(sentMessage[0])
+    currentReactions = discord.utils.get(reactionMessage.reactions, emoji="🔥")
+    print(currentReactions.count)
+    await ctx.respond("The amount of fire emojis on the message is " + str(currentReactions.count))
 
 client.run(TOKEN)
