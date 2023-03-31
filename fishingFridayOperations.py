@@ -53,7 +53,7 @@ def addComment(serverID, comment, user):
         print(currentUsers)
 
         # check if comment already exists to be replaced
-        for index in range(0, len(currentUsers) + 1):
+        for index in range(0, len(currentUsers)):
             if currentUsers[index] == user:
                 currentComments[index] = comment
                 df.loc[selectedServer.index] = [serverID, currentComments, currentUsers]

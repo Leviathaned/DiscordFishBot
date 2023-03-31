@@ -232,6 +232,8 @@ async def fish(ctx):
 
     caughtFish = fishingFridayOperations.fish()
     link = "https://en.wikipedia.org/wiki/" + caughtFish.replace(" ", "_")
+    print(caughtFish)
+    print(link)
     await ctx.respond("You caught a " + caughtFish + "!\n" + link)
 
 @client.slash_command(name="comment", description="Comment what you caught on fishing friday!")
