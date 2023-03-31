@@ -97,7 +97,8 @@ async def checkTime():
 
 @client.event
 async def on_ready():
-    checkTime.start()
+    if not checkTime.is_running():
+        checkTime.start()
     print(f'{client.user} has connected to Discord!')
     await client.change_presence(activity=discord.Game('Use +help'))
 

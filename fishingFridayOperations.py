@@ -42,18 +42,22 @@ def addComment(serverID, comment, user):
         selectedServer = df[df["serverID"] == serverID]
 
         if selectedServer.empty:
-            df.loc[len(df.index)] = [serverID, comment, user]
+            df.loc[len(df.index)] = [serverID, [[comment]], [[user]]]
             df.to_json("fridayComments.json")
             return
 
-        currentComments = selectedServer["comments"].tolist()
-        currentUsers = selectedServer["user"].tolist()
+        currentComments = selectedServer["comments"].tolist()[0]
+        currentUsers = selectedServer["user"].tolist()[0]
+
+        print(currentComments)
+        print(currentUsers)
 
         # check if comment already exists to be replaced
-        for index in range(0, len(currentUsers)):
+        for index in range(0, len(currentUsers) + 1):
             if currentUsers[index] == user:
                 currentComments[index] = comment
                 df.loc[selectedServer.index] = [serverID, currentComments, currentUsers]
+                df.to_json("fridayComments.json")
                 return
 
         if isinstance(currentComments[0], str):
@@ -67,7 +71,9 @@ def addComment(serverID, comment, user):
 
     except (ValueError, KeyError):
         traceback.print_exc()
-        df = createFridayCommentsTable(serverID, comment, user)
+        commentList = [[comment]]
+        userList = [[user]]
+        df = createFridayCommentsTable(serverID, commentList, userList)
 
     df.to_json("fridayComments.json")
 
@@ -85,8 +91,8 @@ def checkIfUserCommentExists(serverID, user):
         if selectedServer.empty:
             return False
 
-        currentComments = selectedServer["comments"].tolist()
-        currentUsers = selectedServer["user"].tolist()
+        currentComments = selectedServer["comments"].tolist()[0]
+        currentUsers = selectedServer["user"].tolist()[0]
 
         for index in range(0, len(currentUsers)):
             if currentUsers[index] == user:
