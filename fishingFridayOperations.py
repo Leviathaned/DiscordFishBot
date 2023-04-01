@@ -42,15 +42,12 @@ def addComment(serverID, comment, user):
         selectedServer = df[df["serverID"] == serverID]
 
         if selectedServer.empty:
-            df.loc[len(df.index)] = [serverID, [[comment]], [[user]]]
+            df.loc[len(df.index)] = [serverID, [comment], [user]]
             df.to_json("fridayComments.json")
             return
 
         currentComments = selectedServer["comments"].tolist()[0]
         currentUsers = selectedServer["user"].tolist()[0]
-
-        print(currentComments)
-        print(currentUsers)
 
         # check if comment already exists to be replaced
         for index in range(0, len(currentUsers)):

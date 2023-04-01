@@ -21,7 +21,8 @@ client = discord.Bot(command_prefix="+", intents=intents)
 
 debugServers = [844663929086935070, 1088123578966360114]
 
-sentMessage = [0]
+sentMessage = []
+messagesList = []
 
 @tasks.loop(seconds = 10.0)
 async def checkTime():
@@ -30,7 +31,7 @@ async def checkTime():
     channelList = newDF["channelID"].tolist()
     enabledList = newDF["enabled"].tolist()
     fridayStageList = newDF["fridayStage"].tolist()
-    messagesList = []
+
 
     for serverIndex in range(0, len(channelList)):
         currentStage = fridayStageList[serverIndex]
@@ -54,19 +55,17 @@ async def checkTime():
                 fridayComments = fishingFridayOperations.getFridayCommentsDf()
                 fridayComments = fridayComments[fridayComments["serverID"] == serverList[serverIndex]]
 
-                commentsList = fridayComments["comments"].tolist()
-                userList = fridayComments["user"].tolist()
+                commentsList = fridayComments["comments"].tolist()[0]
+                userList = fridayComments["user"].tolist()[0]
 
                 serverMessagesList = []
                 for i in range(0, len(commentsList)):
+                    user = client.get_user(userList[i])
+                    rankedMessage = await channel.send(commentsList[i] + " - " + user.name)
+                    serverMessagesList.append(rankedMessage.id)
+                    await rankedMessage.add_reaction("🔥")
 
-                    userName = client.fetch_user(userList[i])
-                    print(userName)
-                    sentMessage[0] = await channel.send(commentsList[i] + " - " + userName)
-                    serverMessagesList[i] = sentMessage[0].id
-                    await sentMessage[0].add_reaction("fire")
-
-                messagesList[serverIndex] = serverMessagesList
+                messagesList.append(serverMessagesList)
                 await channel.send("Place an fire emoji on your favorite comments! The comment with the most votes will win, and their comment will be kept for the next week!")
                 fishAlarmOperations.incrementStage(serverList[serverIndex])
 
@@ -74,31 +73,31 @@ async def checkTime():
 
             if currentStage == 3 and fishAlarmOperations.checkAfterHour(serverList[serverIndex], 20):
                 await channel.send("As fishing friday comes to a close, it is time to announce the winning comment!")
+                print(messagesList)
 
                 serverMessagesList = messagesList[serverIndex]
                 winningMessage = ["None", "None", 0]
 
                 fridayComments = fishingFridayOperations.getFridayCommentsDf()
                 fridayComments = fridayComments[fridayComments["serverID"] == serverList[serverIndex]]
-                userList = fridayComments["user"].tolist()
+                userList = fridayComments["user"].tolist()[0]
 
                 for i in range(0, len(serverMessagesList)):
-                    msg = await channel.messages.fetch(serverMessagesList[i])
-                    fireReactions = discord.utils.get(msg.reactions, emoji="🔥")
+                    msg = await channel.fetch_message(serverMessagesList[i])
+                    fireReactions = discord.utils.get(msg.reactions, emoji="🔥").count
                     if fireReactions > winningMessage[2]:
-                        winningMessage = [msg.content, client.fetch_user(userList[i]), fireReactions]
+                        winningMessage = [msg.content, client.get_user(userList[i]).name, fireReactions]
 
                 await channel.send("Congratulations to " + str(winningMessage[1]) + " for winning the comment competition!")
                 await channel.send("\"" + (winningMessage[0]) +  "\"")
 
         #reset code
 
-
-
 @client.event
 async def on_ready():
     if not checkTime.is_running():
         checkTime.start()
+
     print(f'{client.user} has connected to Discord!')
     await client.change_presence(activity=discord.Game('Use +help'))
 
