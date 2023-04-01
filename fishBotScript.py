@@ -90,6 +90,7 @@ async def checkTime():
 
                 await channel.send("Congratulations to " + str(winningMessage[1]) + " for winning the comment competition!")
                 await channel.send("\"" + (winningMessage[0]) +  "\"")
+                fishAlarmOperations.incrementStage(serverList[serverIndex])
 
         #reset code
 
