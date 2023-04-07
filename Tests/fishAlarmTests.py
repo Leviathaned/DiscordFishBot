@@ -68,6 +68,10 @@ class FishAlarmTests(unittest.TestCase):
         fishAlarmOperations.incrementStage(844663929086935070)
         self.assertEqual(True, True)
 
+    def testGrabWinningComment(self):
+        print(fishAlarmOperations.getWinningComment(844663929086935070))
+        self.assertEqual(True, True)
+
 
 
 

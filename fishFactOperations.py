@@ -3,30 +3,36 @@ import random
 import pandas
 
 
+def readFishFactData():
+    try:
+        df = pandas.read_json("fishFacts.json")
+    except:
+        df = pandas.DataFrame()
+        df.to_json("fishFacts.json")
+        print("File fishFacts.json not found! Creating new fishFacts.json file.")
+        return df
+
+
 def getFishFactCount(serverName):
-    basePath = os.path.dirname(os.path.abspath(__file__))
-    df = pandas.read_json(basePath + r'/fishFacts.json')
+    df = readFishFactData()
     fishFacts = df[serverName][0]
     return len(fishFacts)
 
 
 def grabFishFact(serverName):
-    basePath = os.path.dirname(os.path.abspath(__file__))
-    df = pandas.read_json(os.path.join(basePath, 'fishFacts.json'))
+    df = readFishFactData()
     randomFactIndex = random.randint(0, len(df[serverName][0]) - 1)
     return str(randomFactIndex + 1) + ') ' + df[serverName][0][str(randomFactIndex)]
 
 
 def grabSpecificFishFact(serverName, i):
-    basePath = os.path.dirname(os.path.abspath(__file__))
-    df = pandas.read_json(basePath + r'/fishFacts.json')
+    df = readFishFactData()
     fishFact = df[serverName][0][str(i - 1)]
     return str(i) + ') ' + fishFact
 
 
 def addFishFact(serverName, fishFact):
-    basePath = os.path.dirname(os.path.abspath(__file__))
-    df = pandas.read_json(basePath + r'/fishFacts.json')
+    df = readFishFactData()
     try:
         factCount = getFishFactCount(serverName)
         df[serverName][0][str(factCount)] = fishFact
@@ -39,9 +45,7 @@ def addFishFact(serverName, fishFact):
 
 
 def removeFishFact(serverName, index):
-
-    basePath = os.path.dirname(os.path.abspath(__file__))
-    df = pandas.read_json(basePath + r'/fishFacts.json')
+    df = readFishFactData()
 
     # Make this actually signal that the process has failed, and have the bot notify the user of error
     if len(df[serverName][0]) <= index:

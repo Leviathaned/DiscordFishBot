@@ -42,8 +42,14 @@ async def checkTime():
 
         channel = client.get_channel(channelList[serverIndex])
         if enabledList[serverIndex] and fishAlarmOperations.isItFriday(serverList[serverIndex]):
+
             if currentStage == 0 and fishAlarmOperations.checkAfterHour(serverList[serverIndex], 12):
                 await channel.send(fishingFridayOperations.grabFishingFridayMessage())
+
+                previousWinnerComment = fishAlarmOperations.getWinningComment(serverList[serverIndex])
+                if not previousWinnerComment[0] == "None":
+                    await channel.send("The winner of the weekly comment competition last week was " + previousWinnerComment[1].name + "with the WONDERFUL comment: " + previousWinnerComment[0] + " boasting a POWERFUL " + previousWinnerComment[2] + "!\nWill anyone be able to beat them? Make sure to submit your comments by 6pm with /comment!")
+
                 fishAlarmOperations.incrementStage(serverList[serverIndex])
 
             if currentStage == 1 and fishAlarmOperations.checkAfterHour(serverList[serverIndex], 16):
@@ -86,10 +92,11 @@ async def checkTime():
                     msg = await channel.fetch_message(serverMessagesList[i])
                     fireReactions = discord.utils.get(msg.reactions, emoji="🔥").count
                     if fireReactions > winningMessage[2]:
-                        winningMessage = [msg.content, client.get_user(userList[i]).name, fireReactions]
+                        winningMessage = [msg.content, client.get_user(userList[i]), fireReactions]
 
-                await channel.send("Congratulations to " + str(winningMessage[1]) + " for winning the comment competition!")
-                await channel.send("\"" + (winningMessage[0]) +  "\"")
+                await channel.send("Congratulations to " + str(winningMessage[1].name) + " for winning the comment competition!")
+                await channel.send("\"" + (winningMessage[0]) + "\"")
+                fishAlarmOperations.saveWinningComment(serverList[serverIndex], winningMessage[0], winningMessage[1].id, winningMessage[2])
                 fishAlarmOperations.incrementStage(serverList[serverIndex])
 
         #reset code

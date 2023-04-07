@@ -1,3 +1,5 @@
+import traceback
+
 import pandas
 from datetime import datetime, timezone, timedelta
 
@@ -21,9 +23,9 @@ def getCurrentTime(serverID):
     """
     df = getTimezoneData()
     UTCTime = getCurrentTimeUTC()
-    selectedServer = df[df['serverID'] == serverID]
 
     try:
+        selectedServer = df[df['serverID'] == serverID]
         timezoneAdjust = UTCTime.astimezone(pytz.timezone(selectedServer['timezone'][selectedServer.index[0]]))
     except KeyError:
         return False
@@ -62,37 +64,39 @@ def setFishingFridayEnabled(serverID, enabled, channelID):
 
     Will set a server's fishing friday status to the enabled variable, and will set the included channel as the fishing channel.
     """
-    df = getFishingFridayData('')
+    df = getFishingFridayData()
     try:
         selectedServer = df[df["serverID"] == serverID]
 
         if selectedServer.empty:
-            df.loc[len(df.index)] = [serverID, enabled, channelID, 0]
+            df.loc[len(df.index)] = [serverID, enabled, channelID, 0, "None", -1, -1]
 
-        df.loc[selectedServer.index] = [serverID, enabled, channelID, 0]
+        df.loc[selectedServer.index] = [serverID, enabled, channelID, 0, "None", -1, -1]
     except (ValueError, KeyError):
+        traceback.print_exc()
         data = {'serverID': [serverID],
                 'enabled': [enabled],
                 'channelID': [channelID],
-                "fridayStage": [0]}
+                "fridayStage": [0],
+                "winnerComment": "None",
+                "winningUser": -1,
+                "winningVoteCount:": -1}
         df = pd.DataFrame(data)
 
     df.to_json("enabledServers.json")
 
-def getFishingFridayInfo(serverName):
+def getFishingFridayInfo(serverID):
     """
 
-    :param serverName:
+    :param serverID:
     :return: Boolean enabledStatus
 
     This function will take a serverName and return if the server has enabled or disabled fishing friday alarms.
     """
     try:
-        df = getFishingFridayData("enabledServers.json")
-        return df[serverName][0]
+        df = getFishingFridayData()
+        return df[serverID][0]
     except KeyError:
-        df[serverName] = [False]
-        df.to_json("enabledServers.json")
         return False
 
 def convertHourOffset(hourOffset):
@@ -137,25 +141,29 @@ def getTimeUntilFriday(currentTime):
 
 # functions to get json data into a df that check if the file exists
 def getTimezoneData():
-    df = pandas.read_json("serverTimezones.json", dtype={"serverID": "int64"})
+    try:
+        df = pandas.read_json("serverTimezones.json", dtype={"serverID": "int64"})
+    except FileNotFoundError:
+        df = pd.DataFrame()
+        df.to_json("serverTimezones.json")
+        print("serverTimezones.json not found! Creating new serverTimezones.json file.")
 
     return df
 
-def getFishingFridayData(server):
+def getFishingFridayData():
     """
-
-    :param server: The name that will be used to start a new dataframe if one does not currently exist.
     :return: df of the enabledServers.json file
 
     This will return a pandas df of the enabledServers.json file.
-    If you choose to use '' as the servername instead, it will simply return the file, or inform you that the file does not exist.
+    If the file does not exist, it will create a new one consisting of an empty dataframe.
     """
     try:
-        df = pandas.read_json("enabledServers.json", dtype={"serverID": "int64", "channelID": "int64", "fridayStage": "int64"})
-    except ValueError:
-        if server == '':
-            return pandas.DataFrame()
-        df = pandas.DataFrame(["enabledStatus"], columns=[server])
+        df = pandas.read_json("enabledServers.json", dtype={"serverID": "int64", "channelID": "int64", "fridayStage": "int64", "winningUser": "int64", "winningVoteCount": "int64"})
+    except FileNotFoundError:
+        df = pandas.DataFrame()
+        print("enabledServers.json not found! Creating new enabledServers.json file.")
+        df.to_json("enabledServers.json")
+        return df
 
     return df
 
@@ -167,17 +175,43 @@ def checkAfterHour(serverID, targetHour):
     return False
 
 def incrementStage(serverID):
-    df = getFishingFridayData('')
+    df = getFishingFridayData()
+    if df.empty:
+        return
     selectedServer = df[df["serverID"] == serverID]
     currentStage = selectedServer["fridayStage"][selectedServer.index[0]]
     df.at[selectedServer.index[0], 'fridayStage'] = currentStage + 1
     df.to_json("enabledServers.json")
 
 def resetStage(serverID):
-    df = getFishingFridayData('')
+    df = getFishingFridayData()
+    if df.empty:
+        return
     selectedServer = df[df["serverID"] == serverID]
     df.at[selectedServer.index[0], 'fridayStage'] = 0
     df.to_json("enabledServers.json")
+
+def saveWinningComment(serverID, comment, userID, voteCount):
+    df = getFishingFridayData()
+    if df.empty:
+        return
+    selectedServer = df[df["serverID"] == serverID]
+    df.at[selectedServer.index[0], 'winningComment'] = comment
+    df.at[selectedServer.index[0], 'winningUser'] = userID
+    df.at[selectedServer.index[0], 'winningVoteCount'] = voteCount
+
+def getWinningComment(serverID):
+    df = getFishingFridayData()
+    if df.empty:
+        return
+    selectedServer = df[df["serverID"] == serverID]
+    print(selectedServer)
+    winningComment = [0, 0, 0]
+    winningComment[0] = selectedServer["winnerComment"].tolist()[0]
+    winningComment[2] = selectedServer["winVoteCount"].tolist()[0]
+    winningComment[1] = selectedServer["winningUser"].tolist()[0]
+    return winningComment
+
 
 def getFridayEnabledList():
     """
@@ -185,7 +219,7 @@ def getFridayEnabledList():
 
     This function will return a dataframe of all server IDs and channel ID's from servers that have fishing friday activated
     """
-    df = getFishingFridayData('')
+    df = getFishingFridayData()
     if df.empty:
         return []
 
