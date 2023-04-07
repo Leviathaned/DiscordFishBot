@@ -80,7 +80,7 @@ def setFishingFridayEnabled(serverID, enabled, channelID):
                 "fridayStage": [0],
                 "winnerComment": "None",
                 "winningUser": -1,
-                "winningVoteCount:": -1}
+                "winningVoteCount": -1}
         df = pd.DataFrame(data)
 
     df.to_json("enabledServers.json")
@@ -208,8 +208,8 @@ def getWinningComment(serverID):
     print(selectedServer)
     winningComment = [0, 0, 0]
     winningComment[0] = selectedServer["winnerComment"].tolist()[0]
-    winningComment[2] = selectedServer["winVoteCount"].tolist()[0]
     winningComment[1] = selectedServer["winningUser"].tolist()[0]
+    winningComment[2] = selectedServer["winningVoteCount"].tolist()[0]
     return winningComment
 
 
