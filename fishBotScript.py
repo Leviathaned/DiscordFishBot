@@ -24,6 +24,8 @@ debugServers = [844663929086935070, 1088123578966360114]
 sentMessage = []
 messagesList = []
 
+factsFile = "fishFacts.json"
+
 @tasks.loop(seconds = 10.0)
 async def checkTime():
     newDF = fishAlarmOperations.getFridayEnabledList()
@@ -31,7 +33,6 @@ async def checkTime():
     channelList = newDF["channelID"].tolist()
     enabledList = newDF["enabled"].tolist()
     fridayStageList = newDF["fridayStage"].tolist()
-
 
     for serverIndex in range(0, len(channelList)):
         currentStage = fridayStageList[serverIndex]
@@ -99,7 +100,7 @@ async def checkTime():
                 fishAlarmOperations.saveWinningComment(serverList[serverIndex], winningMessage[0], winningMessage[1].id, winningMessage[2])
                 fishAlarmOperations.incrementStage(serverList[serverIndex])
 
-        #reset code
+        # reset code
 
 @client.event
 async def on_ready():
@@ -119,15 +120,16 @@ async def hello(ctx):
         required = False,
         default = '')
 async def getFishFact(ctx, index: str):
+    fishFactDf = fishFactOperations.readFishFactData(factsFile)
     if index == '':
-        await ctx.respond(fishFactOperations.grabFishFact(str(ctx.guild.id)))
+        await ctx.respond(fishFactOperations.grabFishFact(fishFactDf, str(ctx.guild.id)))
         return
     try:
-        await ctx.respond(fishFactOperations.grabSpecificFishFact(str(ctx.guild.id), int(index)))
-    except:
+        await ctx.respond(fishFactOperations.grabSpecificFishFact(fishFactDf, str(ctx.guild.id), int(index)))
+    except IndexError:
         traceback.print_exc()
         await ctx.respond(
-            f'That number is either too high, or not a number at all! For reference, I currently have {fishFactOperations.getFishFactCount(str(ctx.guild.id))} fish facts!')
+            f'That number is either too high, or not a number at all! For reference, I currently have {fishFactOperations.getFishFactCount(fishFactDf, str(ctx.guild.id))} fish facts!')
 
 @client.slash_command(name = "add_fish_fact", description = "Add a new fish fact!")
 @option("fish_fact",
@@ -135,10 +137,12 @@ async def getFishFact(ctx, index: str):
         required = True)
 async def addFishFact(ctx, fish_fact: str):
     try:
-        fishFactOperations.addFishFact(str(ctx.guild.id), fish_fact)
+        fishFactDf = fishFactOperations.readFishFactData(factsFile)
+        fishFactOperations.addFishFact(fishFactDf, str(ctx.guild.id), fish_fact)
         await ctx.respond(
-            f"Fish fact '{fishFactOperations.getFishFactCount(str(ctx.guild.id))}) {fish_fact}' successfully added!")
-    except:
+            f"Fish fact '{fishFactOperations.getFishFactCount(fishFactDf, str(ctx.guild.id))}) {fish_fact}' successfully added!")
+        fishFactOperations.saveFishFactData(fishFactDf, factsFile)
+    except IndexError:
         traceback.print_exc()
         await ctx.respond(
             "There was an issue adding the fish fact. Did you properly space the fact out, and keep it right after the command?")
@@ -148,8 +152,9 @@ async def addFishFact(ctx, fish_fact: str):
         description="The fish fact to be deleted",
         required= True)
 async def remove_fish_fact(ctx, index: str):
+    fishFactDf = fishFactOperations.readFishFactData(factsFile)
     await ctx.respond(
-                f"Are you sure you want to remove the fish fact {fishFactOperations.grabSpecificFishFact(str(ctx.guild.id), int(index))} permanently? Please type 'Yes' to confirm, and anything else to cancel.")
+                f"Are you sure you want to remove the fish fact {fishFactOperations.grabSpecificFishFact(fishFactDf, str(ctx.guild.id), int(index))} permanently? Please type 'Yes' to confirm, and anything else to cancel.")
     channel = ctx.channel
 
     def check(m):
@@ -157,10 +162,12 @@ async def remove_fish_fact(ctx, index: str):
 
     msg = await client.wait_for("message", check=check)
     if msg.content == "Yes":
-        fishFactOperations.removeFishFact(str(ctx.guild.id), int(index))
+        fishFactOperations.removeFishFact(fishFactDf, str(ctx.guild.id), int(index))
         await ctx.respond("Ok, the fish fact has been deleted.")
     else:
         await ctx.respond("Ok, the delete command has been canceled.")
+
+    fishFactOperations.saveFishFactData(fishFactDf, factsFile)
 
 @client.slash_command(name="get_time", description="Get the current time!")
 async def get_time(ctx):
@@ -226,10 +233,10 @@ async def time_until_friday(ctx):
     minutes = (duration.seconds // 60) - (hours * 60)
     seconds = duration.seconds - (minutes * 60) - (hours * 3600)
     await ctx.respond("Fishing friday is imminent...\nIt will be here in "
-                               + str(duration.days) + " days, "
-                               + str(hours) + " hours, "
-                               + str(minutes) + " minutes, and "
-                               + str(seconds) + " seconds. Be ready, brave fishers.")
+                      + str(duration.days) + " days, "
+                      + str(hours) + " hours, "
+                      + str(minutes) + " minutes, and "
+                      + str(seconds) + " seconds. Be ready, brave fishers.")
 
 @client.slash_command(name="fish", description="Catch a fish to celebrate fishing friday!")
 async def fish(ctx):

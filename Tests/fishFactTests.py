@@ -1,22 +1,55 @@
+import pandas
+
 import fishFactOperations
 import unittest
 
 class TestFishFacts(unittest.TestCase):
 
-    def testCountFishFacts(self):
-        self.assertEqual(1, fishFactOperations.getFishFactCount("testing"), "There is an error in getFishFactCount!")
+    def testAddFishFact(self):
+        data1 = {
+            "fishFactTesting": [{"0": "I really love fishing!"}]
+        }
+
+        data2 = {
+            "fishFactTesting": [{"0": "I really love fishing!", "1": "Fishing is the coolest!"}]
+        }
+        df1 = pandas.DataFrame(data1)
+        df2 = pandas.DataFrame(data2)
+
+        df1 = fishFactOperations.addFishFact(df1, "fishFactTesting", "Fishing is the coolest!")
+        self.assertEqual(True, pandas.DataFrame.equals(df1, df2))
+
+    def testRemoveFishFact(self):
+        data1 = {
+            "fishFactTesting": [{"0": "I really love fishing!"}]
+        }
+
+        data2 = {
+            "fishFactTesting": [{"0": "I really love fishing!", "1": "Fishing is the coolest!"}]
+        }
+        df1 = pandas.DataFrame(data1)
+        df2 = pandas.DataFrame(data2)
+
+        df2 = fishFactOperations.removeFishFact(df2, "fishFactTesting", 2)
+        self.assertEqual(True, pandas.DataFrame.equals(df1, df2))
 
     def testGrabFishFact(self):
-        fishFact = fishFactOperations.grabFishFact("testing")
-        self.assertEqual(fishFact, "1) This is testing fish fact #1!")
+        data1 = {
+            "fishFactTesting": [{"0": "I really love fishing!"}]
+        }
+        df1 = pandas.DataFrame(data1)
+
+        fishFact = fishFactOperations.grabFishFact(df1, "fishFactTesting")
+        self.assertEqual(fishFact, "1) I really love fishing!")
 
     def testGrabSpecificFishFact(self):
-        fishFact = fishFactOperations.grabSpecificFishFact("testing2", 2)
-        self.assertEqual(fishFact, "2) This is testing fish fact #2 from the second test server!")
+        data2 = {
+            "fishFactTesting": [{"0": "I really love fishing!", "1": "Fishing is the coolest!"}]
+        }
+        df2 = pandas.DataFrame(data2)
 
-    def testAddAndRemove(self):
-        fishFactOperations.addFishFact("testing2", "Hello, and welcome to the next sample fish fact!")
-        fishFactOperations.removeFishFact("testing2", 3)
-        self.assertEqual(3, fishFactOperations.getFishFactCount("testing2"), "There is an error in getFishFactCount!")
+        fishFact = fishFactOperations.grabSpecificFishFact(df2, "fishFactTesting", 2)
+        self.assertEqual(fishFact, "2) Fishing is the coolest!")
+
 
 

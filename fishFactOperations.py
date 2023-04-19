@@ -1,59 +1,51 @@
 import os
 import random
+import traceback
+
 import pandas
 
 
-def readFishFactData():
+def readFishFactData(jsonFile):
     try:
-        df = pandas.read_json("fishFacts.json")
+        df = pandas.read_json(jsonFile)
     except:
+        traceback.print_exc()
         df = pandas.DataFrame()
-        df.to_json("fishFacts.json")
-        print("File fishFacts.json not found! Creating new fishFacts.json file.")
-        return df
+        print("Unable to read fish fact table! Creating a new dataframe...")
 
+    return df
 
-def getFishFactCount(serverName):
-    df = readFishFactData()
-    fishFacts = df[serverName][0]
+def saveFishFactData(fishFactDf, jsonFile):
+    fishFactDf.to_json(jsonFile)
+    return
+
+def getFishFactCount(fishFactDf, serverName):
+    fishFacts = fishFactDf[serverName][0]
     return len(fishFacts)
 
+def grabFishFact(fishFactDf, serverName):
+    print(fishFactDf)
+    randomFactIndex = random.randint(0, len(fishFactDf[serverName][0]) - 1)
+    return str(randomFactIndex + 1) + ') ' + fishFactDf[serverName][0][str(randomFactIndex)]
 
-def grabFishFact(serverName):
-    df = readFishFactData()
-    randomFactIndex = random.randint(0, len(df[serverName][0]) - 1)
-    return str(randomFactIndex + 1) + ') ' + df[serverName][0][str(randomFactIndex)]
 
-
-def grabSpecificFishFact(serverName, i):
-    df = readFishFactData()
-    fishFact = df[serverName][0][str(i - 1)]
+def grabSpecificFishFact(fishFactDf, serverName, i):
+    fishFact = fishFactDf[serverName][0][str(i - 1)]
     return str(i) + ') ' + fishFact
 
 
-def addFishFact(serverName, fishFact):
-    df = readFishFactData()
-    try:
-        factCount = getFishFactCount(serverName)
-        df[serverName][0][str(factCount)] = fishFact
-        df.to_json(r'fishFacts.json')
-        return
-    except KeyError:
-        print("Creating new fact table for " + str(serverName))
-        df[serverName] = [{"0": fishFact}]
-        df.to_json(r'fishFacts.json')
+def addFishFact(fishFactDf, serverName, fishFact):
+    factCount = getFishFactCount(fishFactDf, serverName)
+    fishFactDf[serverName][0][str(factCount)] = fishFact
+    return fishFactDf
 
-
-def removeFishFact(serverName, index):
-    df = readFishFactData()
-
+def removeFishFact(fishFactsDf, serverName, index):
     # Make this actually signal that the process has failed, and have the bot notify the user of error
-    if len(df[serverName][0]) <= index:
-        return
+    if len(fishFactsDf[serverName][0]) + 1 <= index:
+        return False
 
-    for i in range(index, len(df[serverName][0])):
-        df[serverName][0][str(i - 1)] = df[serverName][0][str(i)]
+    for i in range(index, len(fishFactsDf[serverName][0])):
+        fishFactsDf[serverName][0][str(i - 1)] = fishFactsDf[serverName][0][str(i)]
 
-    del df[serverName][0][str(len(df[serverName][0]) - 1)]
-    df.to_json(r'fishFacts.json')
-    return
+    del fishFactsDf[serverName][0][str(len(fishFactsDf[serverName][0]) - 1)]
+    return fishFactsDf
