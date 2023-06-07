@@ -1100,11 +1100,6 @@
             },
             {
                 "ns": 0,
-                "title": "Common name",
-                "exists": true
-            },
-            {
-                "ns": 0,
                 "title": "Common seadragon",
                 "exists": true
             },
@@ -5246,11 +5241,6 @@
             {
                 "ns": 0,
                 "title": "Fish development",
-                "exists": true
-            },
-            {
-                "ns": 0,
-                "title": "Fish diseases and parasites",
                 "exists": true
             },
             {
