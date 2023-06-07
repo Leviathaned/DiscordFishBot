@@ -19,77 +19,83 @@ def getFridayComments():
     df = df.astype('object')
     return df
 
+def readFishFactData(jsonFile):
+    """
+    When given a valid jsonFile for friday comments, this function will extract and return a dataframe for use.
+    If the jsonFile can't be read for whatever reason, it will return a fresh dataframe.
+    :param jsonFile:
+    :return: Pandas df:
+    """
+    try:
+        df = pandas.read_json(jsonFile)
+    except:
+        traceback.print_exc()
+        df = pandas.DataFrame()
+        print("Unable to read Friday Comments Json! Creating a new dataframe...")
+    return df
+
 def createFridayCommentsTable(serverID, comment, user):
     data = {"serverID": [serverID],
-            "comments": comment,
+            "comment": comment,
             "user": user}
     df = pd.DataFrame(data)
     return df
 
-def addComment(serverID, comment, user):
+def addComment(df, serverID, comment, user):
     """
 
+    :param df:
     :param serverID:
     :param comment:
     :param user:
     :return:
 
-    This function will add a row to the fridayComments.json under the serverID and containing the userID.
+    This function will add a row to the inserted dataframe under the serverID and containing the userID.
     If the user already has a comment, it will replace the pre-existing comment.
     """
     try:
-        df = getFridayComments()
         selectedServer = df[df["serverID"] == serverID]
 
         if selectedServer.empty:
             df.loc[len(df.index)] = [serverID, [comment], [user]]
-            df.to_json("fridayComments.json")
-            return
+            print("selected server empty!")
+            return df
 
-        currentComments = selectedServer["comments"].tolist()[0]
-        currentUsers = selectedServer["user"].tolist()[0]
+        currentComments = selectedServer["comment"].tolist()
+        currentUsers = selectedServer["user"].tolist()
 
         # check if comment already exists to be replaced
         for index in range(0, len(currentUsers)):
             if currentUsers[index] == user:
                 currentComments[index] = comment
-                df.loc[selectedServer.index] = [serverID, currentComments, currentUsers]
-                df.to_json("fridayComments.json")
-                return
+                df.loc[index] = [serverID, comment, user]
+                print("Identical comment found!")
+                return df
 
-        if isinstance(currentComments[0], str):
-            currentComments.extend([comment])
-            currentUsers.extend([user])
-        else:
-            currentComments[0].extend([comment])
-            currentUsers[0].extend([user])
+        df.loc[len(df.index)] = [serverID, comment, user]
 
-        df.loc[selectedServer.index] = [serverID, currentComments, currentUsers]
-
-    except (ValueError, KeyError):
+        return df
+    except KeyError:
         traceback.print_exc()
-        commentList = [[comment]]
-        userList = [[user]]
-        df = createFridayCommentsTable(serverID, commentList, userList)
+        print("There was an issue with reading the inserted dataframe! Make sure your dataframe is formatted properly!")
+        return False
 
-    df.to_json("fridayComments.json")
-
-def checkIfUserCommentExists(serverID, user):
+def checkIfUserCommentExists(df, serverID, user):
     """
+    :param df:
     :param serverID:
     :param user:
     :return: exists
-    This function returns the user's currently submitted comment, and false if the user does not have a comment.
+    This function returns the user's currently submitted comment, and false if the user does not have a comment, or if there is an error reading the dataframe.
     """
     try:
-        df = getFridayComments()
         selectedServer = df[df["serverID"] == serverID]
 
         if selectedServer.empty:
             return False
 
-        currentComments = selectedServer["comments"].tolist()[0]
-        currentUsers = selectedServer["user"].tolist()[0]
+        currentComments = selectedServer["comment"].tolist()
+        currentUsers = selectedServer["user"].tolist()
 
         for index in range(0, len(currentUsers)):
             if currentUsers[index] == user:

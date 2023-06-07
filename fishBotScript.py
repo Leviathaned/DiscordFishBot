@@ -25,6 +25,7 @@ sentMessage = []
 messagesList = []
 
 factsFile = "fishFacts.json"
+commentsFile = "fridayComments.json"
 
 @tasks.loop(seconds = 10.0)
 async def checkTime():

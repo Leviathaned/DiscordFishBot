@@ -28,7 +28,6 @@ def grabFishFact(fishFactDf, serverName):
     randomFactIndex = random.randint(0, len(fishFactDf[serverName][0]) - 1)
     return str(randomFactIndex + 1) + ') ' + fishFactDf[serverName][0][str(randomFactIndex)]
 
-
 def grabSpecificFishFact(fishFactDf, serverName, i):
     fishFact = fishFactDf[serverName][0][str(i - 1)]
     return str(i) + ') ' + fishFact
