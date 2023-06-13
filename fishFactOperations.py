@@ -16,6 +16,11 @@ def readFishFactData(jsonFile):
     return df
 
 def saveFishFactData(fishFactDf, jsonFile):
+    """
+    :param fishFactDf:
+    :param jsonFile:
+    :return:
+    """
     fishFactDf.to_json(jsonFile)
     return
 

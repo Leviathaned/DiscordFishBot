@@ -14,10 +14,19 @@ def grabFishingFridayMessage():
     messagesList = df["fridayMessages"].tolist()
     return messagesList[random.randint(0, len(messagesList) - 1)]
 
-def getFridayComments():
-    df = pandas.read_json("fridayComments.json", dtype={"serverID": "int64", "comment": "list", "user": "list"})
-    df = df.astype('object')
+def readFactsFile(jsonFile):
+    df = pandas.read_json(jsonFile, dtype={"serverID": "int64", "comment": "list", "user": "list"})
     return df
+
+def saveFactsFile(jsonFile, dataframe):
+    """
+
+    :param jsonFile:
+    :param dataframe:
+    :return:
+    """
+    dataframe.to_json(jsonFile)
+    return
 
 def readFishFactData(jsonFile):
     """
@@ -33,6 +42,29 @@ def readFishFactData(jsonFile):
         df = pandas.DataFrame()
         print("Unable to read Friday Comments Json! Creating a new dataframe...")
     return df
+
+def saveFridayCommentsData(jsonFile, dataframe):
+    """
+    :param jsonFile:
+    :param dataframe:
+    :return:
+    """
+    dataframe.to_json(jsonFile)
+
+def readFridayCommentsData(jsonFile):
+    """
+    :param jsonFile:
+    :return:
+    """
+    df = False
+    try:
+        df = pandas.read_json(jsonFile)
+    except KeyError:
+        print("The json could not be read properly! Returning an empty dataframe...")
+        traceback.print_exc()
+        df = pandas.DataFrame()
+    finally:
+        return df
 
 def createFridayCommentsTable(serverID, comment, user):
     data = {"serverID": [serverID],
@@ -105,13 +137,6 @@ def checkIfUserCommentExists(df, serverID, user):
 
     except (ValueError, KeyError):
         traceback.print_exc()
-        return False
-
-def getFridayCommentsDf():
-    try:
-        df = getFridayComments()
-        return df
-    except:
         return False
 
 def clearFridayComments():

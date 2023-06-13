@@ -21,7 +21,7 @@ client = discord.Bot(command_prefix="+", intents=intents)
 
 debugServers = [844663929086935070, 1088123578966360114]
 
-sentMessage = []
+sentMessage = [0]
 messagesList = []
 
 factsFile = "fishFacts.json"
@@ -60,7 +60,7 @@ async def checkTime():
 
             if currentStage == 2 and fishAlarmOperations.checkAfterHour(serverList[serverIndex], 18):
                 await channel.send("Comment submission has ended! Here are the submitted comments:")
-                fridayComments = fishingFridayOperations.getFridayCommentsDf()
+                fridayComments = fishingFridayOperations.readFridayCommentsData(commentsFile)
                 fridayComments = fridayComments[fridayComments["serverID"] == serverList[serverIndex]]
 
                 commentsList = fridayComments["comments"].tolist()[0]
@@ -86,7 +86,7 @@ async def checkTime():
                 serverMessagesList = messagesList[serverIndex]
                 winningMessage = ["None", "None", 0]
 
-                fridayComments = fishingFridayOperations.getFridayCommentsDf()
+                fridayComments = fishingFridayOperations.readFridayCommentsData(commentsFile)
                 fridayComments = fridayComments[fridayComments["serverID"] == serverList[serverIndex]]
                 userList = fridayComments["user"].tolist()[0]
 
@@ -260,9 +260,11 @@ async def comment(ctx, user_comment: str):
         await ctx.respond("It is not fishing friday yet.\nBe patient, powerful fisher.")
         return
 
-    exists = fishingFridayOperations.checkIfUserCommentExists(ctx.guild.id, ctx.author.id)
+    df = fishingFridayOperations.readFishFactData(commentsFile)
+
+    exists = fishingFridayOperations.checkIfUserCommentExists(df, ctx.guild.id, ctx.author.id)
     if not isinstance(exists, str):
-        fishingFridayOperations.addComment(ctx.guild.id, user_comment, ctx.author.id)
+        fishingFridayOperations.addComment(df, ctx.guild.id, user_comment, ctx.author.id)
         await ctx.respond("Your comment '" + user_comment + "' has been successfully added!")
         return
 
@@ -275,17 +277,22 @@ async def comment(ctx, user_comment: str):
 
     msg = await client.wait_for("message", check=check)
     if msg.content == "Yes":
-        fishingFridayOperations.addComment(ctx.guild.id, user_comment, ctx.author.id)
+        fishingFridayOperations.addComment(df, ctx.guild.id, user_comment, ctx.author.id)
         await ctx.respond("Alright, your new comment is '" + user_comment + "'")
         return
     await ctx.respond("Alright, the comment change has been canceled.")
 
+    fishingFridayOperations.saveFridayCommentsData(commentsFile, df)
+
 @client.slash_command(name="view_comment", description="View your submitted comment!")
 async def viewComment(ctx):
+
+    df = fishingFridayOperations.readFridayCommentsData(commentsFile)
+
     if not fishAlarmOperations.isItFriday(ctx.guild.id):
         await ctx.respond("It is not fishing friday.\nBe patient, vigilant fisher...")
         return
-    userComment = fishingFridayOperations.checkIfUserCommentExists(ctx.guild.id, ctx.author.id)
+    userComment = fishingFridayOperations.checkIfUserCommentExists(df, ctx.guild.id, ctx.author.id)
     if not isinstance(userComment, str):
         await ctx.respond("You do not have a comment currently submitted!")
         return
@@ -296,9 +303,11 @@ async def viewComment(ctx):
         description= "What is your comment?",
         required = True)
 async def debugComment(ctx, user_comment: str):
-    exists = fishingFridayOperations.checkIfUserCommentExists(ctx.guild.id, ctx.author.id)
+    df = fishingFridayOperations.readFridayCommentsData(commentsFile)
+
+    exists = fishingFridayOperations.checkIfUserCommentExists(df, ctx.guild.id, ctx.author.id)
     if not isinstance(exists, str):
-        fishingFridayOperations.addComment(ctx.guild.id, user_comment, ctx.author.id)
+        fishingFridayOperations.addComment(df, ctx.guild.id, user_comment, ctx.author.id)
         await ctx.respond("Your comment '" + user_comment + "' has been successfully added!")
         return
 
@@ -311,14 +320,18 @@ async def debugComment(ctx, user_comment: str):
 
     msg = await client.wait_for("message", check=check)
     if msg.content == "Yes":
-        fishingFridayOperations.addComment(ctx.guild.id, user_comment, ctx.author.id)
+        fishingFridayOperations.addComment(df, ctx.guild.id, user_comment, ctx.author.id)
         await ctx.respond("Alright, your new comment is '" + user_comment + "'")
         return
     await ctx.respond("Alright, the comment change has been canceled.")
 
+    fishingFridayOperations.saveFridayCommentsData(commentsFile, df)
+
 @client.slash_command(name="see_comment_debug", guild_ids= debugServers, description="View your currently submitted comment.")
 async def seeCommentDebug(ctx):
-    userComment = fishingFridayOperations.checkIfUserCommentExists(ctx.guild.id, ctx.author.id)
+    df = fishingFridayOperations.readFridayCommentsData(commentsFile)
+
+    userComment = fishingFridayOperations.checkIfUserCommentExists(df, ctx.guild.id, ctx.author.id)
     if not isinstance(userComment, str):
         await ctx.respond("You do not have a comment currently submitted!")
         return
