@@ -241,10 +241,6 @@ async def time_until_friday(ctx):
 
 @client.slash_command(name="fish", description="Catch a fish to celebrate fishing friday!")
 async def fish(ctx):
-    if not fishAlarmOperations.isItFriday(ctx.guild.id):
-        await ctx.respond("Fishing will be enabled on fishing friday!\nBe patient, vigilant fisher...")
-        return
-
     caughtFish = fishingFridayOperations.fish()
     link = "https://en.wikipedia.org/wiki/" + caughtFish.replace(" ", "_")
     print(caughtFish)
