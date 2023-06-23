@@ -300,7 +300,8 @@ async def fish(ctx):
         description= "What is your comment?",
         required = True)
 async def comment(ctx, user_comment: str):
-    if not fishAlarmOperations.isItFriday(ctx.guild.id):
+    timezoneDF = fishAlarmOperations.getTimezoneData(serverTimezoneFile)
+    if not fishAlarmOperations.isItFriday(timezoneDF, ctx.guild.id):
         await ctx.respond("It is not fishing friday yet.\nBe patient, powerful fisher.")
         return
 
