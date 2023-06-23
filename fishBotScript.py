@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 import traceback
@@ -129,6 +130,7 @@ async def checkTime():
 
             if currentStage == 0 and fishAlarmOperations.checkAfterHour(timezoneDF, serverList[serverIndex], 12):
                 await displayPreviousWinner(channel, serverList, serverIndex)
+                fishAlarmOperations.incrementStage(baseDF, serverList[serverIndex])
 
             if currentStage == 1 and fishAlarmOperations.checkAfterHour(timezoneDF, serverList[serverIndex], 16):
                 await channel.send("Make sure you've submitted your comments! Fishing Friday voting will happen in 2 hours!")
@@ -311,20 +313,33 @@ async def comment(ctx, user_comment: str):
         fishingFridayOperations.saveFridayCommentsData(commentsFile, df)
         return
 
-    await ctx.respond("You already have the submitted comment '" + exists + "' for today! Would you like to replace it? Type Yes to replace, or anything else to cancel.")
+    msg = await ctx.send(
+        "You already have the submitted comment '" + exists + "' for today! Would you like to replace it?")
+    emojiCheck = "✅"
+    emojiCross = "❌"
+    await msg.add_reaction(emojiCheck)
+    await msg.add_reaction(emojiCross)
 
-    channel = ctx.channel
+    await ctx.respond("React with a check to change the message, and an X to keep your current one.")
 
-    def check(m):
-        return m.channel == channel and m.author == ctx.author
+    def check(userReaction, selectedUser):
+        return selectedUser == ctx.author and (str(userReaction.emoji) == emojiCheck or str(userReaction.emoji) == emojiCross)
 
-    msg = await client.wait_for("message", check=check)
-    if msg.content == "Yes":
-        fishingFridayOperations.addComment(df, ctx.guild.id, user_comment, ctx.author.id)
-        await ctx.respond("Alright, your new comment is '" + user_comment + "'")
-        fishingFridayOperations.saveFridayCommentsData(commentsFile, df)
+    try:
+        reaction, user = await client.wait_for("reaction_add", timeout=30.0, check=check)
+
+        if reaction.emoji == "✅":
+            fishingFridayOperations.addComment(df, ctx.guild.id, user_comment, ctx.author.id)
+            await ctx.respond("Alright, your new comment is '" + user_comment + "'")
+            fishingFridayOperations.saveFridayCommentsData(commentsFile, df)
+            return
+        else:
+            await ctx.respond("Alright, the comment change has been canceled.")
+            return
+    except asyncio.TimeoutError or asyncio.CancelledError:
+        await ctx.respond("You haven't responded, so I'll keep the comment the way it is!")
         return
-    await ctx.respond("Alright, the comment change has been canceled.")
+
 
 @client.slash_command(name="view_comment", description="View your submitted comment!")
 async def viewComment(ctx):

@@ -129,7 +129,7 @@ def setFishingFridayEnabled(df, serverID, enabled, channelID):
                 'enabled': [enabled],
                 'channelID': [channelID],
                 "fridayStage": [0],
-                "winnerComment": "None",
+                "winningComment": "None",
                 "winningUser": -1,
                 "winningVoteCount": -1}
         df = pd.DataFrame(data)
