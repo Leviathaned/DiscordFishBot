@@ -300,9 +300,9 @@ async def fish(ctx):
         description= "What is your comment?",
         required = True)
 async def comment(ctx, user_comment: str):
-    """if not fishAlarmOperations.isItFriday(ctx.guild.id):
+    if not fishAlarmOperations.isItFriday(ctx.guild.id):
         await ctx.respond("It is not fishing friday yet.\nBe patient, powerful fisher.")
-        return"""
+        return
 
     df = fishingFridayOperations.readFridayCommentsData(commentsFile)
 
