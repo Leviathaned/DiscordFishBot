@@ -5,18 +5,18 @@ import fishingFridayOperations
 
 class FishingFridayTests(unittest.TestCase):
 
-    def testGrabFishingFridayMessages(self):
+    def test_grab_fishing_friday_messages(self):
         print(fishingFridayOperations.grabFishingFridayMessage())
         self.assertEqual(True, True)
 
-    def testFish(self):
+    def test_fish(self):
         fish = fishingFridayOperations.fish()
         print(fish)
         fish = fish.replace(" ", "_")
         print("https://en.wikipedia.org/wiki/" + fish)
         self.assertEqual(True, True)
 
-    def testAddComment(self):
+    def test_add_comment(self):
         data1 = {
             "serverID": ["fishFactTesting", "fishFactTesting"], "comment": ["This is my extremely cool comment!", "This is my less cool comment"], "user": ["sampleUser1", "sampleUser2"]
         }
@@ -30,7 +30,7 @@ class FishingFridayTests(unittest.TestCase):
 
         self.assertEqual(True, pandas.DataFrame.equals(df1, df2))
 
-    def testAddCommentKeyError(self):
+    def test_add_comment_key_error(self):
         data1 = {
             "server": ["This is a purposely bad dataframe."], "Comment": ["This datafrmae cannot be used."], "user": ["woohootestCase"]
         }
@@ -39,7 +39,7 @@ class FishingFridayTests(unittest.TestCase):
 
         self.assertEqual(df1, False)
 
-    def testAddSeveralComments(self):
+    def test_add_several_comments(self):
         data1 = {
             "serverID": ["fishTestingServer", "fishUsingServer", "fishTestingServer", "fishTestingServer", "fishUsingServer"],
             "comment": ["Cool comment!", "Adding more comments!", "A third comment!", "fourth, even?", "A sus comment..."],
@@ -64,7 +64,7 @@ class FishingFridayTests(unittest.TestCase):
 
         self.assertEqual(True, pandas.DataFrame.equals(df1, df2))
 
-    def testReplaceComment(self):
+    def test_replace_comment(self):
         data1 = {
             "serverID": ["fishTestingServer", "fishTestingServer"], "comment": ["I am the better comment!", "I am an additional comment"], "user": ["sampleUser1", "sampleUser2"]
         }
@@ -81,7 +81,7 @@ class FishingFridayTests(unittest.TestCase):
 
         self.assertEqual(True, pandas.DataFrame.equals(df1, df2))
 
-    def testCommentAlreadyExists(self):
+    def test_comment_already_exists(self):
         data1 = {
             "serverID": ["testFishingServer"], "comment": ["This is the existing comment."], "user": ["sampleUser1"]
         }
@@ -89,7 +89,7 @@ class FishingFridayTests(unittest.TestCase):
 
         self.assertEqual("This is the existing comment.", fishingFridayOperations.checkIfUserCommentExists(df1, "testFishingServer", "sampleUser1"))
 
-    def testCommentDoesNotExist(self):
+    def test_comment_does_not_exist(self):
         data1 = {
             "serverID": ["testFishingServer"], "comment": ["This is the existing comment"], "user": ["sampleUser1"]
         }

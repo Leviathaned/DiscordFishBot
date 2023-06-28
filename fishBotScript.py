@@ -26,10 +26,91 @@ messagesList = []
 
 factsFile = "fishFacts.json"
 commentsFile = "fridayComments.json"
+serverStatusFile = "enabledServers.json"
+serverTimezoneFile = "serverTimezones.json"
+
+def clearComments():
+    fishingFridayOperations.clearFridayComments()
+    messagesList.clear()
+
+async def displayPreviousWinner(channel, serverList, serverIndex):
+    await channel.send(fishingFridayOperations.grabFishingFridayMessage())
+
+    df = fishAlarmOperations.getFishingFridayData(serverStatusFile)
+
+    previousWinnerComment = fishAlarmOperations.getWinningComment(df, serverList[serverIndex])
+    if not previousWinnerComment[0] == "None":
+        await channel.send("The winner of the weekly comment competition last week was " + previousWinnerComment[
+            1].name + "with the WONDERFUL comment: " + previousWinnerComment[0] + " boasting a POWERFUL " +
+                           previousWinnerComment[
+                               2] + "!\nWill anyone be able to beat them? Make sure to submit your comments by 6pm with /comment!")
+
+    fishAlarmOperations.incrementStage(df, serverList[serverIndex])
+    fishAlarmOperations.saveFishingFridayData(serverStatusFile, df)
+
+async def displayComments(channel, serverList, serverIndex):
+    await channel.send("Comment submission has ended! Here are the submitted comments:")
+    fridayComments = fishingFridayOperations.readFridayCommentsData(commentsFile)
+    fridayComments = fridayComments[fridayComments["serverID"] == serverList[serverIndex]]
+
+    commentsList = fridayComments["comment"].tolist()
+    userList = fridayComments["user"].tolist()
+
+    serverMessagesList = []
+    for i in range(0, len(commentsList)):
+        user = client.get_user(userList[i])
+        rankedMessage = await channel.send(commentsList[i] + " - " + user.name)
+        serverMessagesList.append(rankedMessage.id)
+        await rankedMessage.add_reaction("🔥")
+
+    messagesList.append(serverMessagesList)
+
+    await channel.send(
+        "Place an fire emoji on your favorite comments! The comment with the most votes will win, and their comment will be kept for the next week!")
+    df = fishAlarmOperations.getFishingFridayData(serverStatusFile)
+    fishAlarmOperations.incrementStage(df, serverList[serverIndex])
+    fishAlarmOperations.saveFishingFridayData(serverStatusFile, df)
+
+async def displayWinningComment(channel, serverList, serverIndex):
+    await channel.send("As fishing friday comes to a close, it is time to announce the winning comment!")
+
+    print("These are all available comments listed in general")
+    print(messagesList)
+    print("Server Index: " + str(serverIndex))
+
+    serverMessagesList = messagesList[serverIndex]
+    winningMessage = ["None", "None", 0]
+
+    fridayComments = fishingFridayOperations.readFridayCommentsData(commentsFile)
+    fridayComments = fridayComments[fridayComments["serverID"] == serverList[serverIndex]]
+    userList = fridayComments["user"].tolist()
+
+    print("The available server Messages List are:")
+    print(serverMessagesList)
+
+    for i in range(0, len(serverMessagesList)):
+        msg = await channel.fetch_message(serverMessagesList[i])
+        fireReactions = discord.utils.get(msg.reactions, emoji="🔥").count
+        if fireReactions > winningMessage[2]:
+            print("Winning message found!")
+            winningMessage = [msg.content, client.get_user(userList[i]), fireReactions]
+
+    df = fishAlarmOperations.getFishingFridayData(serverStatusFile)
+    await channel.send("Congratulations to " + str(winningMessage[1].name) + " for winning the comment competition!")
+    await channel.send("\"" + (winningMessage[0]) + "\"")
+    df = fishAlarmOperations.saveWinningComment(df, serverList[serverIndex], winningMessage[0], winningMessage[1].id,
+                                                winningMessage[2])
+
+    df = fishAlarmOperations.incrementStage(df, serverList[serverIndex])
+    clearComments()
+    fishAlarmOperations.saveFishingFridayData(serverStatusFile, df)
 
 @tasks.loop(seconds = 10.0)
 async def checkTime():
-    newDF = fishAlarmOperations.getFridayEnabledList()
+    baseDF = fishAlarmOperations.getFishingFridayData(serverStatusFile)
+    timezoneDF = fishAlarmOperations.getTimezoneData(serverTimezoneFile)
+
+    newDF = fishAlarmOperations.getFridayEnabledList(baseDF)
     serverList = newDF["serverID"].tolist()
     channelList = newDF["channelID"].tolist()
     enabledList = newDF["enabled"].tolist()
@@ -37,71 +118,32 @@ async def checkTime():
 
     for serverIndex in range(0, len(channelList)):
         currentStage = fridayStageList[serverIndex]
-        if currentStage != 0 and not fishAlarmOperations.isItFriday(serverList[serverIndex]):
-            fishAlarmOperations.resetStage(serverList[serverIndex])
+        if currentStage != 0 and not fishAlarmOperations.isItFriday(timezoneDF, serverList[serverIndex]):
+            fishAlarmOperations.resetStage(baseDF, serverList[serverIndex])
             fishingFridayOperations.clearFridayComments()
+            fishAlarmOperations.saveFishingFridayData(serverStatusFile, baseDF)
             return
 
         channel = client.get_channel(channelList[serverIndex])
-        if enabledList[serverIndex] and fishAlarmOperations.isItFriday(serverList[serverIndex]):
+        if enabledList[serverIndex] and fishAlarmOperations.isItFriday(timezoneDF, serverList[serverIndex]):
 
-            if currentStage == 0 and fishAlarmOperations.checkAfterHour(serverList[serverIndex], 12):
-                await channel.send(fishingFridayOperations.grabFishingFridayMessage())
+            if currentStage == 0 and fishAlarmOperations.checkAfterHour(timezoneDF, serverList[serverIndex], 12):
+                await displayPreviousWinner(channel, serverList, serverIndex)
 
-                previousWinnerComment = fishAlarmOperations.getWinningComment(serverList[serverIndex])
-                if not previousWinnerComment[0] == "None":
-                    await channel.send("The winner of the weekly comment competition last week was " + previousWinnerComment[1].name + "with the WONDERFUL comment: " + previousWinnerComment[0] + " boasting a POWERFUL " + previousWinnerComment[2] + "!\nWill anyone be able to beat them? Make sure to submit your comments by 6pm with /comment!")
-
-                fishAlarmOperations.incrementStage(serverList[serverIndex])
-
-            if currentStage == 1 and fishAlarmOperations.checkAfterHour(serverList[serverIndex], 16):
+            if currentStage == 1 and fishAlarmOperations.checkAfterHour(timezoneDF, serverList[serverIndex], 16):
                 await channel.send("Make sure you've submitted your comments! Fishing Friday voting will happen in 2 hours!")
-                fishAlarmOperations.incrementStage(serverList[serverIndex])
+                fishAlarmOperations.incrementStage(baseDF, serverList[serverIndex])
 
-            if currentStage == 2 and fishAlarmOperations.checkAfterHour(serverList[serverIndex], 18):
-                await channel.send("Comment submission has ended! Here are the submitted comments:")
-                fridayComments = fishingFridayOperations.readFridayCommentsData(commentsFile)
-                fridayComments = fridayComments[fridayComments["serverID"] == serverList[serverIndex]]
-
-                commentsList = fridayComments["comments"].tolist()[0]
-                userList = fridayComments["user"].tolist()[0]
-
-                serverMessagesList = []
-                for i in range(0, len(commentsList)):
-                    user = client.get_user(userList[i])
-                    rankedMessage = await channel.send(commentsList[i] + " - " + user.name)
-                    serverMessagesList.append(rankedMessage.id)
-                    await rankedMessage.add_reaction("🔥")
-
-                messagesList.append(serverMessagesList)
-                await channel.send("Place an fire emoji on your favorite comments! The comment with the most votes will win, and their comment will be kept for the next week!")
-                fishAlarmOperations.incrementStage(serverList[serverIndex])
+            if currentStage == 2 and fishAlarmOperations.checkAfterHour(timezoneDF, serverList[serverIndex], 18):
+                await displayComments(channel, serverList, serverIndex)
 
             # TODO: find a way to handle tie breakers here
 
-            if currentStage == 3 and fishAlarmOperations.checkAfterHour(serverList[serverIndex], 20):
-                await channel.send("As fishing friday comes to a close, it is time to announce the winning comment!")
-                print(messagesList)
-
-                serverMessagesList = messagesList[serverIndex]
-                winningMessage = ["None", "None", 0]
-
-                fridayComments = fishingFridayOperations.readFridayCommentsData(commentsFile)
-                fridayComments = fridayComments[fridayComments["serverID"] == serverList[serverIndex]]
-                userList = fridayComments["user"].tolist()[0]
-
-                for i in range(0, len(serverMessagesList)):
-                    msg = await channel.fetch_message(serverMessagesList[i])
-                    fireReactions = discord.utils.get(msg.reactions, emoji="🔥").count
-                    if fireReactions > winningMessage[2]:
-                        winningMessage = [msg.content, client.get_user(userList[i]), fireReactions]
-
-                await channel.send("Congratulations to " + str(winningMessage[1].name) + " for winning the comment competition!")
-                await channel.send("\"" + (winningMessage[0]) + "\"")
-                fishAlarmOperations.saveWinningComment(serverList[serverIndex], winningMessage[0], winningMessage[1].id, winningMessage[2])
-                fishAlarmOperations.incrementStage(serverList[serverIndex])
+            if currentStage == 3 and fishAlarmOperations.checkAfterHour(timezoneDF, serverList[serverIndex], 20):
+                await displayWinningComment(channel, serverList, serverIndex)
 
         # reset code
+    fishAlarmOperations.saveFishingFridayData(serverStatusFile, baseDF)
 
 @client.event
 async def on_ready():
@@ -109,7 +151,7 @@ async def on_ready():
         checkTime.start()
 
     print(f'{client.user} has connected to Discord!')
-    await client.change_presence(activity=discord.Game('Use +help'))
+    await client.change_presence(activity=discord.Game('IT IS FISHING FRIDAY!'))
 
 @client.slash_command(name="hello", description="Say hello!")
 async def hello(ctx):
@@ -172,11 +214,13 @@ async def remove_fish_fact(ctx, index: str):
 
 @client.slash_command(name="get_time", description="Get the current time!")
 async def get_time(ctx):
-    if not fishAlarmOperations.getCurrentTime(ctx.guild.id):
+    timezoneDF = fishAlarmOperations.getTimezoneData(serverTimezoneFile)
+
+    if not fishAlarmOperations.getCurrentTime(timezoneDF, ctx.guild.id):
         await ctx.respond("You have not set the server timezone!")
     else:
         await ctx.respond("The current time is " +
-                          fishAlarmOperations.getCurrentTime(ctx.guild.id).strftime("%m/%d/%y, %I:%M:%S %p") + " .")
+                          fishAlarmOperations.getCurrentTime(timezoneDF, ctx.guild.id).strftime("%m/%d/%y, %I:%M:%S %p") + " .")
 
 @client.slash_command(name = "get_utc", description="Get the current UTC time!")
 async def get_utc(ctx):
@@ -185,6 +229,7 @@ async def get_utc(ctx):
 
 @client.slash_command(name = "set_timezone", description="Set the server time zone!")
 async def set_timezone(ctx):
+    timezoneDF = fishAlarmOperations.getTimezoneData(serverTimezoneFile)
     await ctx.respond("The current UTC time is " +
                       fishAlarmOperations.getCurrentTimeUTC().strftime("%m/%d/%y, %I:%M:%S %p") + "." +
                       "Please input your time difference from UTC (for example, if you are 4 hours behind this time, input '-4', or '+4' if you are 4 hours ahead.)")
@@ -197,9 +242,9 @@ async def set_timezone(ctx):
     # A secondary check to ensure it is a integer
     try:
         timezoneName = fishAlarmOperations.convertHourOffset(int(msg.content))
-        fishAlarmOperations.storeTimeZone(ctx.guild.id, timezoneName)
+        timezoneDF = fishAlarmOperations.storeTimeZone(timezoneDF, ctx.guild.id, timezoneName)
         await ctx.channel.send("Timezone set! The current time is " +
-                               fishAlarmOperations.getCurrentTime(ctx.guild.id).strftime("%m/%d/%y, %I:%M:%S %p"))
+                               fishAlarmOperations.getCurrentTime(timezoneDF, ctx.guild.id).strftime("%m/%d/%y, %I:%M:%S %p"))
     except ValueError:
         await ctx.respond(
             "The input " + msg.content + " is not a valid response. Please make sure you use a positive or negative integer, and that it falls within the range of -12 to +11.")
@@ -209,8 +254,9 @@ async def set_timezone(ctx):
         description= "Set to True if you want fishing friday, set to False to disable fishing friday.",
         required = True)
 async def friday_status(ctx, enable: bool):
+    statusDF = fishAlarmOperations.getFishingFridayData(serverStatusFile)
 
-    fishAlarmOperations.setFishingFridayEnabled(ctx.guild.id, enable, ctx.channel.id)
+    fishAlarmOperations.setFishingFridayEnabled(statusDF, ctx.guild.id, enable, ctx.channel.id)
 
     if enable:
         await ctx.respond("Fishing friday has been enabled! The channel '#" + ctx.channel.name + "' will be the fishing channel from here on out!"
@@ -220,7 +266,9 @@ async def friday_status(ctx, enable: bool):
 
 @client.slash_command(name="time_until_friday", description= "How much time until friday?")
 async def time_until_friday(ctx):
-    currentTime = fishAlarmOperations.getCurrentTime(ctx.guild.id)
+    timezoneDF = fishAlarmOperations.getTimezoneData(serverTimezoneFile)
+
+    currentTime = fishAlarmOperations.getCurrentTime(timezoneDF, ctx.guild.id)
     if not currentTime:
         await ctx.respond("You have not set your timezone!")
         return
@@ -243,8 +291,6 @@ async def time_until_friday(ctx):
 async def fish(ctx):
     caughtFish = fishingFridayOperations.fish()
     link = "https://en.wikipedia.org/wiki/" + caughtFish.replace(" ", "_")
-    print(caughtFish)
-    print(link)
     await ctx.respond("You caught a " + caughtFish + "!\n" + link)
 
 @client.slash_command(name="comment", description="Comment what you caught on fishing friday!")
@@ -252,16 +298,17 @@ async def fish(ctx):
         description= "What is your comment?",
         required = True)
 async def comment(ctx, user_comment: str):
-    if not fishAlarmOperations.isItFriday(ctx.guild.id):
+    """if not fishAlarmOperations.isItFriday(ctx.guild.id):
         await ctx.respond("It is not fishing friday yet.\nBe patient, powerful fisher.")
-        return
+        return"""
 
-    df = fishingFridayOperations.readFishFactData(commentsFile)
+    df = fishingFridayOperations.readFridayCommentsData(commentsFile)
 
     exists = fishingFridayOperations.checkIfUserCommentExists(df, ctx.guild.id, ctx.author.id)
     if not isinstance(exists, str):
         fishingFridayOperations.addComment(df, ctx.guild.id, user_comment, ctx.author.id)
         await ctx.respond("Your comment '" + user_comment + "' has been successfully added!")
+        fishingFridayOperations.saveFridayCommentsData(commentsFile, df)
         return
 
     await ctx.respond("You already have the submitted comment '" + exists + "' for today! Would you like to replace it? Type Yes to replace, or anything else to cancel.")
@@ -275,17 +322,17 @@ async def comment(ctx, user_comment: str):
     if msg.content == "Yes":
         fishingFridayOperations.addComment(df, ctx.guild.id, user_comment, ctx.author.id)
         await ctx.respond("Alright, your new comment is '" + user_comment + "'")
+        fishingFridayOperations.saveFridayCommentsData(commentsFile, df)
         return
     await ctx.respond("Alright, the comment change has been canceled.")
-
-    fishingFridayOperations.saveFridayCommentsData(commentsFile, df)
 
 @client.slash_command(name="view_comment", description="View your submitted comment!")
 async def viewComment(ctx):
 
     df = fishingFridayOperations.readFridayCommentsData(commentsFile)
+    timezoneDF = fishAlarmOperations.getTimezoneData(serverTimezoneFile)
 
-    if not fishAlarmOperations.isItFriday(ctx.guild.id):
+    if not fishAlarmOperations.isItFriday(timezoneDF, ctx.guild.id):
         await ctx.respond("It is not fishing friday.\nBe patient, vigilant fisher...")
         return
     userComment = fishingFridayOperations.checkIfUserCommentExists(df, ctx.guild.id, ctx.author.id)
@@ -338,14 +385,46 @@ async def placeReactionMessage(ctx):
     await ctx.respond("Sending generic message...")
     reactionMessage = await ctx.channel.send("Here is a generic message!")
     await reactionMessage.add_reaction(emoji="🔥")
-    print(reactionMessage.id)
     sentMessage[0] = reactionMessage.id
 
 @client.slash_command(name="check_message_reactions", guild_ids=debugServers, description="Check the reaction stats on the previously placed message")
 async def checkMessageReactions(ctx):
     reactionMessage = await ctx.fetch_message(sentMessage[0])
     currentReactions = discord.utils.get(reactionMessage.reactions, emoji="🔥")
-    print(currentReactions.count)
     await ctx.respond("The amount of fire emojis on the message is " + str(currentReactions.count))
+
+@client.slash_command(name="check_previous_winner", guild_ids=debugServers, description="Check the previous winner of the comment!")
+async def checkPreviousWinner(ctx):
+    statusDF = fishAlarmOperations.getFishingFridayData(serverStatusFile)
+
+    newDF = fishAlarmOperations.getFridayEnabledList(statusDF)
+    serverList = newDF["serverID"].tolist()
+
+    for serverIndex in range(0, len(serverList)):
+        await displayPreviousWinner(ctx.channel, serverList, serverIndex)
+
+@client.slash_command(name="check_all_comments", guild_ids=debugServers, description="Display all comments and vote on them!")
+async def checkCurrentComments(ctx):
+    statusDF = fishAlarmOperations.getFishingFridayData(serverStatusFile)
+
+    newDF = fishAlarmOperations.getFridayEnabledList(statusDF)
+    serverList = newDF["serverID"].tolist()
+
+    for serverIndex in range(0, len(serverList)):
+        await displayComments(ctx.channel, serverList, serverIndex)
+
+@client.slash_command(name="check_winner_comment", guild_ids=debugServers, description="check which comment is the winner!")
+async def checkWinnerComment(ctx):
+    statusDF = fishAlarmOperations.getFishingFridayData(serverStatusFile)
+
+    newDF = fishAlarmOperations.getFridayEnabledList(statusDF)
+    serverList = newDF["serverID"].tolist()
+
+    for serverIndex in range(0, len(serverList)):
+        await displayWinningComment(ctx.channel, serverList, serverIndex)
+
+@client.slash_command(name="clear_comment_cache", guild_ids=debugServers, description="clear all comments being saved and voted upon for this friday!")
+async def clearCommentCache(ctx):
+    clearComments()
 
 client.run(TOKEN)

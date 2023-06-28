@@ -56,18 +56,21 @@ def readFridayCommentsData(jsonFile):
     :param jsonFile:
     :return:
     """
-    df = False
     try:
         df = pandas.read_json(jsonFile)
-    except KeyError:
-        print("The json could not be read properly! Returning an empty dataframe...")
+        if df.empty:
+            print("The inserted .json is empty! Creating a new dataframe...")
+            df = pandas.DataFrame(columns=["serverID", "comment", "user"])
+            return df
+        return df
+    except:
         traceback.print_exc()
-        df = pandas.DataFrame()
-    finally:
+        print("The json could not be read properly! Returning an empty dataframe...")
+        df = pandas.DataFrame(columns = ["serverID", "comment", "user"])
         return df
 
 def createFridayCommentsTable(serverID, comment, user):
-    data = {"serverID": [serverID],
+    data = {"serverID": serverID,
             "comment": comment,
             "user": user}
     df = pd.DataFrame(data)
@@ -89,7 +92,7 @@ def addComment(df, serverID, comment, user):
         selectedServer = df[df["serverID"] == serverID]
 
         if selectedServer.empty:
-            df.loc[len(df.index)] = [serverID, [comment], [user]]
+            df.loc[len(df.index)] = [serverID, comment, user]
             print("selected server empty!")
             return df
 

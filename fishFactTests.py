@@ -5,7 +5,7 @@ import unittest
 
 class TestFishFacts(unittest.TestCase):
 
-    def testAddFishFact(self):
+    def test_add_fish_fact(self):
         data1 = {
             "fishFactTesting": [{"0": "I really love fishing!"}]
         }
@@ -19,7 +19,7 @@ class TestFishFacts(unittest.TestCase):
         df1 = fishFactOperations.addFishFact(df1, "fishFactTesting", "Fishing is the coolest!")
         self.assertEqual(True, pandas.DataFrame.equals(df1, df2))
 
-    def testRemoveFishFact(self):
+    def test_remove_fish_fact(self):
         data1 = {
             "fishFactTesting": [{"0": "I really love fishing!"}]
         }
@@ -33,7 +33,7 @@ class TestFishFacts(unittest.TestCase):
         df2 = fishFactOperations.removeFishFact(df2, "fishFactTesting", 2)
         self.assertEqual(True, pandas.DataFrame.equals(df1, df2))
 
-    def testGrabFishFact(self):
+    def test_grab_fish_fact(self):
         data1 = {
             "fishFactTesting": [{"0": "I really love fishing!"}]
         }
@@ -42,7 +42,7 @@ class TestFishFacts(unittest.TestCase):
         fishFact = fishFactOperations.grabFishFact(df1, "fishFactTesting")
         self.assertEqual(fishFact, "1) I really love fishing!")
 
-    def testGrabSpecificFishFact(self):
+    def test_grab_specific_fish_fact(self):
         data2 = {
             "fishFactTesting": [{"0": "I really love fishing!", "1": "Fishing is the coolest!"}]
         }
